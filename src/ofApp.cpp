@@ -3,6 +3,8 @@
 #include "ImOf.h"
 #include "Config.h"
 
+#define MAX_FPS 90
+
 //--------------------------------------------------------------
 void ofApp::setup(){
 	
@@ -17,7 +19,7 @@ void ofApp::setup(){
 	ImOf::SetStyle();
 	
 	
-	vidRecorder.setVideoCodec("mpeg4");
+	vidRecorder.setVideoCodec("png");
 	vidRecorder.setVideoBitrate("800k");
 	
 	// setup
@@ -85,6 +87,8 @@ void ofApp::beginExport() {
 		
 		exportingStatus = exporting;
 		
+		ofSetFrameRate(MAX_FPS);
+		
 		ofLogNotice() << "Start!";
 	}
 		
@@ -94,6 +98,8 @@ void ofApp::beginExport() {
 void ofApp::endExport() {
 	vidRecorder.close();
 	exportingStatus = saving;
+	
+	ofSetFrameRate(frameRate);
 }
 
 void ofApp::recordingComplete(ofxVideoRecorderOutputFileCompleteEventArgs& args) {
