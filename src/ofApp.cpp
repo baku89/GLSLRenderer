@@ -9,7 +9,6 @@
 void ofApp::setup(){
 	
 	// setup window attributes
-//	ofEnableNormalizedTexCoords();
 	ofSetWindowTitle("GLSL Renderer");
 	ofEnableSmoothing();
 	
@@ -17,7 +16,6 @@ void ofApp::setup(){
 	ImOf::SetFont();
 	gui.setup();
 	ImOf::SetStyle();
-	
 	
 	vidRecorder.setVideoCodec("png");
 	vidRecorder.setVideoBitrate("800k");
@@ -103,7 +101,7 @@ void ofApp::endExport() {
 }
 
 void ofApp::recordingComplete(ofxVideoRecorderOutputFileCompleteEventArgs& args) {
-	exportingStatus = saved;
+	exportingStatus = stopped;
 }
 
 //--------------------------------------------------------------
@@ -119,38 +117,46 @@ void ofApp::drawImGui(){
 	ImGui::SetWindowSize(ImVec2(ImGui::GetWindowWidth(), ofGetHeight()));
 	{
 	
+		static bool isOpen = true;
 		
-		ImGui::Text("Current Time: %.2f", time);
+		ImGui::SetNextTreeNodeOpen(isOpen);
 		
-		ImGui::Separator();
-		
-		ImGui::InputInt("Duration", &duration);
-		
-		if (ImGui::InputInt("Frame Rate", &frameRate)) {
-			ofSetFrameRate(frameRate);
-		}
-		
-		if (ImGui::Button("Export")) {
+		if ((isOpen = ImGui::CollapsingHeader("General"))) {
 			
-			beginExport();
+			static char timeOverlay[512];
+			sprintf(timeOverlay, "Current: %.1fs", time);
+			ImGui::ProgressBar(time / ((float)duration / frameRate), ImVec2(-1, 0), timeOverlay);
+			
+			ImGui::Separator();
+			
+			ImGui::DragInt("Duration", &duration, 1.0f, 1, 9000, "%.0fF");
+			
+			if (ImGui::SliderInt("Frame Rate", &frameRate, 8, 90)) {
+				ofSetFrameRate(frameRate);
+			}
+			
+			if (ImGui::Button("Export")) {
+				
+				beginExport();
+			}
+			
+			ImGui::SameLine();
+			
+			switch (exportingStatus) {
+				case stopped:
+					ImGui::Text("");
+					break;
+				case exporting:
+					static char overlay[512];
+					sprintf(overlay, "Rendering.. (%d / %d)", currentFrame, duration);
+					ImGui::ProgressBar((float)currentFrame / duration, ImVec2(-1, 0), overlay);
+					break;
+				case saving:
+					ImGui::ProgressBar(1.0f, ImVec2(-1, 0), "Saving..");
+					break;
+			}
 		}
 		
-		ImGui::SameLine();
-		
-		switch (exportingStatus) {
-			case stopped:
-				ImGui::Text("");
-				break;
-			case exporting:
-				ImGui::Text("Rendering.. (%d / %d)", currentFrame, duration);
-				break;
-			case saving:
-				ImGui::Text("Saving..");
-				break;
-			case saved:
-				ImGui::Text("Saved");
-				break;
-		}
 		
 		glsl.drawImGui();
 		

@@ -86,7 +86,6 @@ public:
 		
 		ofSetColor(255);
 		
-		
 		ofPushMatrix();
 		{
 			float screenW = ofGetWidth() - GUI_WIDTH;
@@ -114,19 +113,25 @@ public:
 	
 	void drawImGui() {
 		
-		if (ImGui::CollapsingHeader("Renderer")) {
+		static bool isOpen = true;
+		
+		ImGui::SetNextTreeNodeOpen(isOpen);
+		
+		if ((isOpen = ImGui::CollapsingHeader("Renderer"))) {
 			
-			ImGui::DragInt2("Size", targetSize, 1.0f, 4, 4096);
+			ImGui::DragInt2("", targetSize, 1.0f, 4, 4096);
+			ImGui::SameLine();
 			
-			if (ImGui::Button("Change Size")) {
-				setSize(targetSize[0], targetSize[1]);
+			if (target.getWidth() != targetSize[0] || target.getHeight() != targetSize[1]) {
+				if (ImGui::Button("Update Size")) {
+					setSize(targetSize[0], targetSize[1]);
+				}
+			} else {
+				ImGui::Text("Size");
 			}
 			
-			ImGui::SameLine();
-			ImGui::Text("%.0f x %.0f", target.getWidth(), target.getHeight());
-			
 			ImGui::Separator();
-			
+		
 		}
 	}
 	

@@ -11,8 +11,7 @@
 enum ExportingStatus {
 	stopped,
 	exporting,
-	saving,
-	saved
+	saving
 };
 
 
