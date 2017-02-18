@@ -10,9 +10,16 @@ namespace ImOf
 	inline void SetFont() {
 		ImGuiIO * io = &ImGui::GetIO();
 		ImFontConfig font_config;
-		font_config.OversampleH = 1;
-		font_config.OversampleV = 1;
+		font_config.OversampleH = 4;
+		font_config.OversampleV = 4;
 		io->Fonts->AddFontFromFileTTF(&ofToDataPath("Karla-Regular.ttf")[0], 14.f, &font_config);
+		io->Fonts->AddFontFromFileTTF(&ofToDataPath("FiraCode-Regular.ttf")[0], 16.f, &font_config);
+	}
+	
+	inline void PushMonospaceFont() {
+		ImGuiIO * io = &ImGui::GetIO();
+		ImFont *mono = io->Fonts->Fonts[1];
+		ImGui::PushFont(mono);
 	}
 	
 	inline void SetStyle() {

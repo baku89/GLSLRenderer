@@ -5,6 +5,7 @@
 #include "ofxXmlSettings.h"
 #include "ofxImGui.h"
 
+#include "ImOf.h"
 #include "Config.h"
 
 class GLSLRenderer {
@@ -20,20 +21,31 @@ public:
 		std::streambuf *old = std::cerr.rdbuf(ss.rdbuf());
 		
 		compileSucceed = shader.setupShaderFromFile(GL_FRAGMENT_SHADER, path);
-		shader.linkProgram();
 		
 		std::cerr.rdbuf(old);
+		
+		shader.linkProgram();
 		
 		if (!compileSucceed) {
 			// get error
 			GLuint frag = shader.getShader(GL_FRAGMENT_SHADER);
 			GLsizei infoLength;
+			
 			ofBuffer infoBuffer;
 			glGetShaderiv(frag, GL_INFO_LOG_LENGTH, &infoLength);
 			infoBuffer.allocate(infoLength);
 			glGetShaderInfoLog(frag, infoLength, &infoLength, infoBuffer.getData());
 			
-			errorMessage = infoBuffer.getText() + "\n" + ss.str();
+			// remove lines inserted by ofLog
+			string lines = ss.str();
+
+			size_t pos;
+			pos = lines.find(":\n");
+			if (pos != string::npos) {
+				lines.erase(0, pos + 2);
+			}
+
+			errorMessage = infoBuffer.getText() + "\n" + lines;
 		}
 		
 		file.open(path);
@@ -130,7 +142,7 @@ public:
 	}
 	
 	void drawImGui() {
-		
+	
 		static bool isOpen = true;
 		
 		ImGui::SetNextTreeNodeOpen(isOpen);
@@ -152,10 +164,12 @@ public:
 		
 		}
 		
-		
 		if (!compileSucceed) {
+			
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 2);
 			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0));
+			ImOf::PushMonospaceFont();
+			
 			ImGui::SetNextWindowPos(ImVec2(GUI_WIDTH, 0));
 			ImGui::SetNextWindowSize(ImVec2(ofGetWidth() - GUI_WIDTH, ofGetHeight()));
 			ImGui::Begin("", NULL, ImVec2(0,0), -1.0f, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar);
@@ -163,6 +177,8 @@ public:
 				ImGui::Text("%s", errorMessage.c_str());
 			}
 			ImGui::End();
+			
+			ImGui::PopFont();
 			ImGui::PopStyleColor();
 			ImGui::PopStyleVar();
 		}
@@ -176,7 +192,6 @@ public:
 	}
 	
 private:
-	
 	stringstream	ss;
 	string			errorMessage;
 	
