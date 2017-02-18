@@ -9,18 +9,20 @@ uniform vec2 u_resolution;
 uniform vec2 u_mouse;
 uniform float u_time;
 
-vec3 circle(vec2 uv) {
+vec3 gradient(float t) {
 
-  float inner = step(.5, length(uv - .5));
+	vec3 offset = vec3(.0, .1, .2) * 12.;
 
-  return mix(vec3(0.), vec3(1.), inner);
+  return vec3(cos(t * 10. + offset)) / 2. + .5;
 }
 
 void main() {
     vec2 uv = gl_FragCoord.xy/u_resolution.xy;
     uv.x *= u_resolution.x/u_resolution.y;
 
-    vec3 color = circle(uv);
+    uv.x += u_time;
+
+    vec3 color = gradient(uv.x) * uv.y;
 
     gl_FragColor = vec4(color,1.0);
 }

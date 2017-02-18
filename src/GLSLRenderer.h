@@ -5,6 +5,8 @@
 #include "ofxXmlSettings.h"
 #include "ofxImGui.h"
 
+#include "Config.h"
+
 class GLSLRenderer {
 public:
 	
@@ -45,8 +47,9 @@ public:
 	}
 	
 	void setSize(int w, int h) {
-		ofLogNotice() << w << " " << h;
 		target.allocate(w, h, GL_RGB);
+		targetSize[0] = w;
+		targetSize[1] = h;
 	}
 	
 	void update() {
@@ -79,48 +82,65 @@ public:
 		target.end();
 	}
 	
-	void draw(float x, float y, float w, float h) {
+	void draw() {
+		
+		ofSetColor(255);
+		
 		
 		ofPushMatrix();
-		ofScale(1, -1);
-		ofTranslate(0, -h);
-		
-		target.draw(x, y, w, h);
+		{
+			float screenW = ofGetWidth() - GUI_WIDTH;
+			float screenH = ofGetHeight();
+			
+			float w = target.getWidth();
+			float h = target.getHeight();
+			
+			float sx = screenW / w;
+			float sy = screenH / h;
+			
+			float s = min(sx, sy);
+			
+			float tx = (screenW - w * s) * .5;
+			float ty = (screenH - h * s) * .5;
+			
+			ofTranslate(GUI_WIDTH + tx, ty + h * s);
+			
+			ofScale(1, -1);
+			target.draw(0, 0, w * s, h * s);
+		}
 		
 		ofPopMatrix();
-	}
-	
-	void draw(float x, float y) {
-		draw(x, y, target.getWidth(), target.getHeight());
 	}
 	
 	void drawImGui() {
 		
 		if (ImGui::CollapsingHeader("Renderer")) {
 			
-			static int w = target.getWidth(), h = target.getHeight();
-			ImGui::InputInt("Width", &w);
-			ImGui::InputInt("Height", &h);
+			ImGui::DragInt2("Size", targetSize, 1.0f, 4, 4096);
 			
-			if (ImGui::Button("Set Size")) {
-				setSize(w, h);
+			if (ImGui::Button("Change Size")) {
+				setSize(targetSize[0], targetSize[1]);
 			}
+			
+			ImGui::SameLine();
+			ImGui::Text("%.0f x %.0f", target.getWidth(), target.getHeight());
 			
 			ImGui::Separator();
-			
-			if (ImGui::Button("Reload Shader")) {
-				
-			}
 			
 		}
 	}
 	
-	float getWidth() { return target.getWidth(); }
-	float getHeight() { return target.getHeight(); }
-
+	float getWidth()	{ return target.getWidth(); }
+	float getHeight()	{ return target.getHeight(); }
+	
+	void readToPixels(ofPixels &pixels) {
+		target.getTexture().readToPixels(pixels);
+	}
 	
 private:
-
+	
+	int				targetSize[2];
+	
 	int				lastModified;
 	
 	ofFile			file;

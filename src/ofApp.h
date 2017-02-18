@@ -8,6 +8,14 @@
 
 #include "GLSLRenderer.h"
 
+enum ExportingStatus {
+	stopped,
+	exporting,
+	saving,
+	saved
+};
+
+
 class ofApp : public ofBaseApp{
 
 public:
@@ -19,6 +27,7 @@ public:
 	void exit();
 	
 	void beginExport();
+	void endExport();
 	
 	void recordingComplete(ofxVideoRecorderOutputFileCompleteEventArgs& args);
 	
@@ -39,6 +48,7 @@ public:
 	GLSLRenderer		glsl;
 	
 	ofxVideoRecorder    vidRecorder;
+	ofPixels			pixels;
 	
 	// params
 	float				time;
@@ -46,7 +56,7 @@ public:
 	int					frameRate = 30;
 	
 	
-	bool				isExporting = false;
+	ExportingStatus		exportingStatus = stopped;
 	
 	int					currentFrame;
 	

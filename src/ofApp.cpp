@@ -1,6 +1,7 @@
 #include "ofApp.h"
 
 #include "ImOf.h"
+#include "Config.h"
 
 //--------------------------------------------------------------
 void ofApp::setup(){
@@ -18,9 +19,6 @@ void ofApp::setup(){
 	
 	vidRecorder.setVideoCodec("mpeg4");
 	vidRecorder.setVideoBitrate("800k");
-	vidRecorder.setAudioCodec("mp3");
-	vidRecorder.setAudioBitrate("192k");
-
 	
 	// setup
 	glsl.setup();
@@ -34,36 +32,39 @@ void ofApp::setup(){
 	
 	glsl.loadSettings(settings);
 	
-	
+	ofAddListener(vidRecorder.outputFileCompleteEvent, this, &ofApp::recordingComplete);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
 	
-	if (isExporting) {
-		time = (float)currentFrame++ / frameRate;
-		
-		if (currentFrame == duration) {
-			
-		}
-	}
+	if (exportingStatus == exporting) {
+		time = (float)currentFrame / frameRate;
+	} else {
 		time = fmod(ofGetElapsedTimef(), (float)duration / frameRate);
 	}
 	
-	
 	glsl.update();
 	glsl.render(time);
+	
+	if (exportingStatus == exporting) {
+		
+		glsl.readToPixels(pixels);
+		vidRecorder.addFrame(pixels);
+		
+		if (++currentFrame == duration) {
+			endExport();
+		}
+	}
 	
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
 	
-	ofBackgroundHex(0x1a2b35);
+	ofBackground(0);
 	
-	ofSetColor(255);
-	
-	glsl.draw(ofGetWidth() - glsl.getWidth(), 0);
+	glsl.draw();
 	
 	drawImGui();
 }
@@ -72,12 +73,33 @@ void ofApp::draw(){
 void ofApp::beginExport() {
 	ofFileDialogResult result = ofSystemSaveDialog("export.mov", "Save");
 	
-	if (result.bSuccess) {
+	if (result.bSuccess && !vidRecorder.isInitialized()) {
+		
+		int w = glsl.getWidth(), h = glsl.getHeight();
 		
 		currentFrame = 0;
+		pixels.allocate(w, h, GL_RGB);
+		
+		vidRecorder.setup(result.getPath(), w, h, frameRate);
+		vidRecorder.start();
+		
+		exportingStatus = exporting;
+		
+		ofLogNotice() << "Start!";
 	}
 		
 }
+
+//--------------------------------------------------------------
+void ofApp::endExport() {
+	vidRecorder.close();
+	exportingStatus = saving;
+}
+
+void ofApp::recordingComplete(ofxVideoRecorderOutputFileCompleteEventArgs& args) {
+	exportingStatus = saved;
+}
+
 //--------------------------------------------------------------
 void ofApp::drawImGui(){
 	
@@ -86,8 +108,8 @@ void ofApp::drawImGui(){
 	static bool p_open = true;
 	
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
-	ImGui::SetNextWindowSizeConstraints(ImVec2(250, ofGetHeight()), ImVec2(ofGetWidth(), ofGetHeight()));
-	ImGui::Begin("Control", &p_open, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar);
+	ImGui::SetNextWindowSize(ImVec2(GUI_WIDTH, ofGetHeight()));
+	ImGui::Begin("Control", &p_open, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 	ImGui::SetWindowSize(ImVec2(ImGui::GetWindowWidth(), ofGetHeight()));
 	{
 	
@@ -107,12 +129,22 @@ void ofApp::drawImGui(){
 			beginExport();
 		}
 		
-		if (isExporting) {
-			ImGui::SameLine();
-			ImGui::Text("Rendering.. (%d / %d", currentFrame, duration);
-		}
-	
+		ImGui::SameLine();
 		
+		switch (exportingStatus) {
+			case stopped:
+				ImGui::Text("");
+				break;
+			case exporting:
+				ImGui::Text("Rendering.. (%d / %d)", currentFrame, duration);
+				break;
+			case saving:
+				ImGui::Text("Saving..");
+				break;
+			case saved:
+				ImGui::Text("Saved");
+				break;
+		}
 		
 		glsl.drawImGui();
 		
@@ -126,6 +158,8 @@ void ofApp::drawImGui(){
 
 //--------------------------------------------------------------
 void ofApp::exit() {
+	
+	vidRecorder.close();
 	
 	// save settings
 	ofxXmlSettings settings;
