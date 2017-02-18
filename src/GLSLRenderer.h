@@ -6,7 +6,6 @@
 #include "ofxImGui.h"
 
 #include "Config.h"
-#include "StdCapture.h"
 
 class GLSLRenderer {
 public:
@@ -17,23 +16,28 @@ public:
 	
 	void loadShader(string path) {
 		
-		StdCapture capture;
-		
-		capture.BeginCapture();
+		ss.str("");
+		std::streambuf *old = std::cerr.rdbuf(ss.rdbuf());
 		
 		compileSucceed = shader.setupShaderFromFile(GL_FRAGMENT_SHADER, path);
-		
-		capture.EndCapture();
-		
-		if (!compileSucceed) {
-			ofLogNotice() << "failed";
-			errorMessage = capture.GetCapture();
-		}
-		
-		
 		shader.linkProgram();
 		
+		std::cerr.rdbuf(old);
+		
+		if (!compileSucceed) {
+			// get error
+			GLuint frag = shader.getShader(GL_FRAGMENT_SHADER);
+			GLsizei infoLength;
+			ofBuffer infoBuffer;
+			glGetShaderiv(frag, GL_INFO_LOG_LENGTH, &infoLength);
+			infoBuffer.allocate(infoLength);
+			glGetShaderInfoLog(frag, infoLength, &infoLength, infoBuffer.getData());
+			
+			errorMessage = infoBuffer.getText() + "\n" + ss.str();
+		}
+		
 		file.open(path);
+		lastModified = filesystem::last_write_time(file);
 	}
 	
 	
@@ -72,9 +76,6 @@ public:
 		int lm = filesystem::last_write_time(file);
 		
 		if (lm != lastModified) {
-			ofLogNotice() << "reload!";
-			lastModified = lm;
-			
 			loadShader(file.getAbsolutePath());
 		}
 	}
@@ -153,13 +154,17 @@ public:
 		
 		
 		if (!compileSucceed) {
-//			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 2);
-//			ImGui::Begin("", NULL, ImVec2(0,0), -1.0f, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar);
-//			{
-				ImGui::Text("ERROR=%s", errorMessage.c_str());
-//			}
-//			ImGui::End();
-//			ImGui::PopStyleVar();
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 2);
+			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0));
+			ImGui::SetNextWindowPos(ImVec2(GUI_WIDTH, 0));
+			ImGui::SetNextWindowSize(ImVec2(ofGetWidth() - GUI_WIDTH, ofGetHeight()));
+			ImGui::Begin("", NULL, ImVec2(0,0), -1.0f, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar);
+			{
+				ImGui::Text("%s", errorMessage.c_str());
+			}
+			ImGui::End();
+			ImGui::PopStyleColor();
+			ImGui::PopStyleVar();
 		}
 	}
 	
