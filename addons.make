@@ -1,0 +1,3 @@
+ofxImGui
+ofxVideoRecorder
+ofxXmlSettings
