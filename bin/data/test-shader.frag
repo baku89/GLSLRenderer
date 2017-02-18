@@ -20,7 +20,7 @@ void main() {
     vec2 uv = gl_FragCoord.xy/u_resolution.xy;
     uv.x *= u_resolution.x/u_resolution.y;
 
-    uv.x += u_time;
+    uv.x += u_time;ss
 
     vec3 color = gradient(uv.x) * uv.y;
 

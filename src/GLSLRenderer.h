@@ -6,6 +6,7 @@
 #include "ofxImGui.h"
 
 #include "Config.h"
+#include "StdCapture.h"
 
 class GLSLRenderer {
 public:
@@ -15,7 +16,21 @@ public:
 	}
 	
 	void loadShader(string path) {
-		shader.setupShaderFromFile(GL_FRAGMENT_SHADER, path);
+		
+		StdCapture capture;
+		
+		capture.BeginCapture();
+		
+		compileSucceed = shader.setupShaderFromFile(GL_FRAGMENT_SHADER, path);
+		
+		capture.EndCapture();
+		
+		if (!compileSucceed) {
+			ofLogNotice() << "failed";
+			errorMessage = capture.GetCapture();
+		}
+		
+		
 		shader.linkProgram();
 		
 		file.open(path);
@@ -86,29 +101,31 @@ public:
 		
 		ofSetColor(255);
 		
-		ofPushMatrix();
-		{
-			float screenW = ofGetWidth() - GUI_WIDTH;
-			float screenH = ofGetHeight();
-			
-			float w = target.getWidth();
-			float h = target.getHeight();
-			
-			float sx = screenW / w;
-			float sy = screenH / h;
-			
-			float s = min(sx, sy);
-			
-			float tx = (screenW - w * s) * .5;
-			float ty = (screenH - h * s) * .5;
-			
-			ofTranslate(GUI_WIDTH + tx, ty + h * s);
-			
-			ofScale(1, -1);
-			target.draw(0, 0, w * s, h * s);
-		}
+		if (compileSucceed) {
+			ofPushMatrix();
+			{
+				float screenW = ofGetWidth() - GUI_WIDTH;
+				float screenH = ofGetHeight();
+				
+				float w = target.getWidth();
+				float h = target.getHeight();
+				
+				float sx = screenW / w;
+				float sy = screenH / h;
+				
+				float s = min(sx, sy);
+				
+				float tx = (screenW - w * s) * .5;
+				float ty = (screenH - h * s) * .5;
+				
+				ofTranslate(GUI_WIDTH + tx, ty + h * s);
+				
+				ofScale(1, -1);
+				target.draw(0, 0, w * s, h * s);
+			}
+			ofPopMatrix();
 		
-		ofPopMatrix();
+		}
 	}
 	
 	void drawImGui() {
@@ -133,6 +150,17 @@ public:
 			ImGui::Separator();
 		
 		}
+		
+		
+		if (!compileSucceed) {
+//			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 2);
+//			ImGui::Begin("", NULL, ImVec2(0,0), -1.0f, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar);
+//			{
+				ImGui::Text("ERROR=%s", errorMessage.c_str());
+//			}
+//			ImGui::End();
+//			ImGui::PopStyleVar();
+		}
 	}
 	
 	float getWidth()	{ return target.getWidth(); }
@@ -143,6 +171,11 @@ public:
 	}
 	
 private:
+	
+	stringstream	ss;
+	string			errorMessage;
+	
+	bool			compileSucceed;
 	
 	int				targetSize[2];
 	
