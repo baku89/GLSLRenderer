@@ -59,7 +59,7 @@ public:
 			// remove lines inserted by ofLog
 			string lines = ss.str();
 
-			size_t pos;
+			static size_t pos;
 			pos = lines.find(":\n");
 			if (pos != string::npos) {
 				lines.erase(0, pos + 2);
@@ -263,8 +263,8 @@ public:
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
 			
 			ImGuiStyle& style = ImGui::GetStyle();
-			int		prevGrabRounding = style.GrabRounding;
-			float	prevItemSpacingX = style.ItemSpacing.x;
+			const int	prevGrabRounding = style.GrabRounding;
+			const float	prevItemSpacingX = style.ItemSpacing.x;
 			style.GrabRounding = 9;
 			style.ItemSpacing.x = 16;
 			
@@ -285,8 +285,8 @@ public:
 					
 					ofSetColor(255, 80);
 					
-					int wp = style.WindowPadding.x;
-					int ip = style.ItemSpacing.x;
+					const int wp = style.WindowPadding.x;
+					const int ip = style.ItemSpacing.x;
 					
 					ofDrawRectangle(wp + ip + SEEKBAR_PLAY_WIDTH, SEEKBAR_HEIGHT / 2 - 1,
 									ww - SEEKBAR_PLAY_WIDTH - SEEKBAR_TIME_WIDTH - wp * 2 - ip, 1);
@@ -316,8 +316,9 @@ public:
 				static char timeLabel[128];
 				
 				if (timeDisplayMode == TIMECODE) {
-					int seconds = lastRenderedFrame / frameRate;
-					int minutes = seconds / 60;
+					static int seconds, minutes;
+					seconds = lastRenderedFrame / frameRate;
+					minutes = seconds / 60;
 					sprintf(timeLabel, "%02d:%02d###TimeDisplay", minutes, seconds);
 				} else {
 					sprintf(timeLabel, "%dF###TimeDisplay", lastRenderedFrame);
@@ -353,7 +354,8 @@ private:
 	
 	void renderFrame(int frame) {
 		
-		float time = (float)frame / frameRate;
+		static float time;
+		time = (float)frame / frameRate;
 		
 		target.begin();
 		{
