@@ -6,7 +6,7 @@
 #include "ofxImGui.h"
 #include "ofxVideoRecorder.h"
 
-#include "GLSLRenderer.h"
+#include "GLSLManager.h"
 #include "ShaderFileManager.h"
 
 enum ExportingStatus {
@@ -30,6 +30,7 @@ public:
 	void endExport();
 	
 	// event
+	void frameRateUpdated(int &frameRate);
 	void recordingComplete(ofxVideoRecorderOutputFileCompleteEventArgs& args);
 	void shaderFileSelected(string &path);
 
@@ -47,16 +48,14 @@ public:
 	
 	ofxImGui::Gui		gui;
 	
-	GLSLRenderer		glsl;
-	ShaderFileManager	shaderFileManager;
+	GLSLManager			glsl;
+	ShaderFileManager	shaderFile;
 	
 	ofxVideoRecorder    vidRecorder;
 	ofPixels			pixels;
 	
 	// params
 	float				time;
-	int					duration = 120;
-	int					frameRate = 30;
 	
 	
 	ExportingStatus		exportingStatus = stopped;
