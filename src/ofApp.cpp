@@ -18,8 +18,9 @@ void ofApp::setup(){
 	gui.setup();
 	ImOf::SetStyle();
 	
-	vidRecorder.setVideoCodec("png");
-	vidRecorder.setVideoBitrate("800k");
+	// set codecs
+	codecs.push_back((Codec){"PNG", "png", "mov"});
+	codecs.push_back((Codec){"MPEG4", "mpeg4", "mov"});
 	
 	// setup
 	glsl.setup();
@@ -33,21 +34,20 @@ void ofApp::setup(){
 	// load settings
 	ofxXmlSettings settings("settings.xml");
 	
+	selectedCodec	= settings.getValue("selectedCodec", selectedCodec);
+	bitrate			= settings.getValue("bitrate", bitrate);
+	
 	glsl.loadSettings(settings);
 	shaderFile.loadSettings(settings);
-	
-	
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
 	
+	glsl.update();
 	shaderFile.update();
 	
-	if (exportingStatus == stopped) {
-		glsl.update();
-		
-	} else if (exportingStatus == exporting) {
+	if (exportingStatus == exporting) {
 		
 		glsl.readToPixelsAtFrame(currentFrame, pixels);
 		vidRecorder.addFrame(pixels);
@@ -56,7 +56,6 @@ void ofApp::update(){
 			endExport();
 		}
 	}
-	
 }
 
 //--------------------------------------------------------------
@@ -71,30 +70,36 @@ void ofApp::draw(){
 }
 
 //--------------------------------------------------------------
-void ofApp::beginExport() {
-	ofFileDialogResult result = ofSystemSaveDialog("export.mov", "Save");
+void ofApp::beginExport(Codec codec, int bitrate) {
 	
-	if (result.bSuccess && !vidRecorder.isInitialized()) {
-		
-		int w = glsl.getWidth(), h = glsl.getHeight();
-		int frameRate = glsl.getFrameRate();
-		
-		currentFrame = 0;
-		pixels.allocate(w, h, GL_RGB);
-		
-		vidRecorder.setup(result.getPath(), w, h, frameRate);
-		vidRecorder.start();
-		
-		exportingStatus = exporting;
-		ofSetFrameRate(MAX_FPS);
+	ofFileDialogResult result = ofSystemSaveDialog("export." + codec.extension, "Save");
+	
+	if (!result.bSuccess) {
+		return;
 	}
+	
+	vidRecorder.setVideoCodec(codec.name);
+	vidRecorder.setVideoBitrate(ofToString(bitrate) + "k");
 		
+	int w = glsl.getWidth(), h = glsl.getHeight();
+	int frameRate = glsl.getFrameRate();
+	
+	currentFrame = 0;
+	pixels.allocate(w, h, GL_RGB);
+	
+	vidRecorder.setup(result.getPath(), w, h, frameRate);
+	vidRecorder.start();
+	
+	glsl.setRecording(true);
+	exportingStatus = exporting;
+	ofSetFrameRate(MAX_FPS);
 }
 
 //--------------------------------------------------------------
 void ofApp::endExport() {
 	vidRecorder.close();
 	exportingStatus = saving;
+	glsl.setRecording(false);
 	
 	ofSetFrameRate(glsl.getFrameRate());
 }
@@ -105,6 +110,7 @@ void ofApp::endExport() {
 
 void ofApp::recordingComplete(ofxVideoRecorderOutputFileCompleteEventArgs& args) {
 	exportingStatus = stopped;
+	glsl.resetPlay();
 }
 
 void ofApp::shaderFileSelected(string &path) {
@@ -127,37 +133,46 @@ void ofApp::drawImGui(){
 	ImGui::Begin("Control", &p_open, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 	ImGui::SetWindowSize(ImVec2(ImGui::GetWindowWidth(), ofGetHeight()));
 	{
-	
-		static bool isOpen = true;
+		ImGui::Separator();
 		
-		ImGui::SetNextTreeNodeOpen(isOpen);
+		static stringstream ss;
+		ss.str("");
+		ss << "Time:" << setw(11) << glsl.getTimeText();
 		
-		if ((isOpen = ImGui::CollapsingHeader("General"))) {
-			
-			if (ImGui::Button("Export")) {
-				
-				beginExport();
+		ImGui::PushItemWidth(-1);
+		ImOf::PushMonospaceLargeFont();
+		ImGui::Text("%s", ss.str().c_str());
+		ImGui::PopFont();
+		ImGui::PopItemWidth();
+		
+		ImGui::Separator();
+		
+		static const int codecNum = codecs.size();
+		
+		static const char** codecLabels = [](vector<Codec> &codecs) {
+			char** labels = new char*[codecs.size()];
+			for (int i = 0; i < codecs.size(); i++) {
+				labels[i] = new char[codecs[i].label.size() + 1];
+				strcpy(labels[i], codecs[i].label.c_str());
 			}
-			
-			ImGui::SameLine();
-			
-			switch (exportingStatus) {
-				case stopped:
-					ImGui::Text("");
-					break;
-				case exporting:
-					static char overlay[512];
-					sprintf(overlay, "Rendering.. (%d / %d)", currentFrame, glsl.getDuration());
-					ImGui::ProgressBar((float)currentFrame / glsl.getDuration(), ImVec2(-1, 0), overlay);
-					break;
-				case saving:
-					ImGui::ProgressBar(1.0f, ImVec2(-1, 0), "Saving..");
-					break;
-			}
-			
-			ImGui::Separator();
+			return const_cast<const char**>(labels);
+		}(codecs);
+		
+		ImGui::PushItemWidth(80);
+		ImGui::Combo("", &selectedCodec, codecLabels, codecNum);
+		
+		ImGui::SameLine();
+		ImGui::PushItemWidth(50);
+		ImGui::DragInt("", &bitrate, 100.0f, 100.0f, 2000.0f, "%.0fk");
+		ImGui::PopItemWidth();
+		
+		ImGui::SameLine();
+		if (ImGui::Button("Export", ImVec2(-1, 0))) {
+			Codec &codec = codecs[selectedCodec];
+			beginExport(codec, bitrate);
 		}
 		
+		ImGui::Separator();
 		
 		glsl.drawImGui();
 		shaderFile.drawImGui();
@@ -178,6 +193,9 @@ void ofApp::exit() {
 	
 	// save settings
 	ofxXmlSettings settings;
+	
+	settings.setValue("selectedCodec", selectedCodec);
+	settings.setValue("bitrate", bitrate);
 	
 	glsl.saveSettings(settings);
 	shaderFile.saveSettings(settings);

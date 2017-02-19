@@ -1,4 +1,4 @@
 #pragma once
 
 
-#define GUI_WIDTH 300
+#define GUI_WIDTH 240

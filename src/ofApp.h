@@ -15,6 +15,12 @@ enum ExportingStatus {
 	saving
 };
 
+struct Codec {
+	string	label;
+	string	name;
+	string	extension;
+};
+
 
 class ofApp : public ofBaseApp{
 
@@ -26,7 +32,7 @@ public:
 	
 	void exit();
 	
-	void beginExport();
+	void beginExport(Codec codec, int bitrate);
 	void endExport();
 	
 	// event
@@ -55,13 +61,14 @@ public:
 	ofPixels			pixels;
 	
 	// params
-	float				time;
-	
 	
 	ExportingStatus		exportingStatus = stopped;
 	
 	int					currentFrame;
 	
+	vector<Codec>		codecs;
+	int					selectedCodec = 0;
+	int					bitrate = 800;
 	
-		
+	
 };

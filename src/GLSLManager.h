@@ -13,7 +13,7 @@
 #define SEEKBAR_HEIGHT			40
 #define SEEKBAR_MARGIN			30
 
-#define SEEKBAR_PLAY_WIDTH		40
+#define SEEKBAR_PLAY_WIDTH		30
 #define SEEKBAR_TIME_WIDTH		60
 
 #define RELOAD_DISPLAY_DURATION	0.5
@@ -113,6 +113,14 @@ public:
 		targetSize[1] = h;
 	}
 	
+	void resetPlay() {
+		currentTime = 0.0001f;
+	}
+	
+	void setRecording(bool flag) {
+		isRecording = flag;
+	}
+	
 	void update() {
 		
 		static int lm;
@@ -132,7 +140,7 @@ public:
 		prevElapsedTime = elapsedTime;
 		
 		// frame
-		if (isPlaying) {
+		if (isPlaying && !isRecording) {
 			currentTime = fmod(currentTime + deltaTime, (float)duration / frameRate);
 		}
 		
@@ -140,6 +148,16 @@ public:
 		
 		// reload display
 		remainingReloadDisplayTime = std::max(0.0f, remainingReloadDisplayTime - deltaTime);
+		
+		// update timecode
+		if (timeDisplayMode == TIMECODE) {
+			static int seconds, minutes;
+			seconds = lastRenderedFrame / frameRate;
+			minutes = seconds / 60;
+			sprintf(timeText, "%02d:%02d", minutes, seconds);
+		} else {
+			sprintf(timeText, "%dF", lastRenderedFrame);
+		}
 	}
 	
 	void draw() {
@@ -173,13 +191,16 @@ public:
 				ofScale(1, -1);
 				target.draw(0, 0, fw, fh);
 				
-				
-				if (remainingReloadDisplayTime > 0) {
+				if (remainingReloadDisplayTime > 0 || isRecording) {
 					ofPushStyle();
 					
-					ofSetColor(255, 255 * (remainingReloadDisplayTime / RELOAD_DISPLAY_DURATION));
+					if (isRecording) {
+						ofSetColor(255, 0, 0);
+					} else {
+						ofSetColor(255, 255 * (remainingReloadDisplayTime / RELOAD_DISPLAY_DURATION));
+					}
 					
-					const float l = 8;
+					const float l = 6;
 					
 					ofDrawRectangle(0, 0, fw - l, l);
 					ofDrawRectangle(fw - l, 0, l, fh - l);
@@ -193,6 +214,8 @@ public:
 		
 		}
 	}
+	
+	char* getTimeText() { return timeText; }
 	
 	void drawImGui() {
 	
@@ -248,7 +271,7 @@ public:
 		shaderArea.height = ofGetHeight();
 		
 		
-		if (shaderArea.inside(ofGetMouseX(), ofGetMouseY())) {
+		if (isRecording || shaderArea.inside(ofGetMouseX(), ofGetMouseY())) {
 			float ww = min(ofGetWidth() - GUI_WIDTH - SEEKBAR_MARGIN * 2, SEEKBAR_WIDTH);
 			
 			ImVec2 pos( (GUI_WIDTH + ofGetWidth()) / 2.0f - ww / 2.0f, ofGetHeight() - SEEKBAR_HEIGHT - SEEKBAR_MARGIN);
@@ -269,31 +292,60 @@ public:
 			style.ItemSpacing.x = 16;
 			
 			ImGui::Begin("", NULL, ImVec2(0,0), -1.0f, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar);
-			
 			{
-				
 				// toggle play/pause
-				if (ImGui::Button(isPlaying ? "Pause###PlayToggle" : "Play###PlayToggle", ImVec2(SEEKBAR_PLAY_WIDTH, -1))) {
-					isPlaying = !isPlaying;
+				if (isRecording) {
+					ImGui::SameLine(SEEKBAR_PLAY_WIDTH);
+				} else {
+					if (ImGui::Button("###PlayToggle", ImVec2(SEEKBAR_PLAY_WIDTH, -1))) {
+						isPlaying = !isPlaying;
+					}
 				}
 				
-				// seek bar bg
+				// some other graphics
+				ofPushMatrix();
+				ofPushStyle();
 				{
-					ofPushMatrix();
-					ofPushStyle();
 					ofTranslate(pos.x, pos.y);
-					
-					ofSetColor(255, 80);
 					
 					const int wp = style.WindowPadding.x;
 					const int ip = style.ItemSpacing.x;
 					
+					// icon
+					ofPushMatrix();
+					{
+						ofTranslate(wp + SEEKBAR_PLAY_WIDTH / 2, SEEKBAR_HEIGHT / 2 - 1);
+						
+						if (isRecording) {
+							
+							ofSetColor(255, 0, 0);
+							ofDrawCircle(0, 0,  7.0);
+							
+						} else {
+						
+							ofSetColor(255);
+						
+							if (isPlaying) {
+								ofDrawRectangle(+2, -7, 4, 14);
+								ofScale(-1, 1);
+								ofDrawRectangle(+2, -7, 4, 14);
+							} else {
+								ofDrawTriangle(7, 0, -4, -7, -4, 7);
+							}
+						}
+					}
+					ofPopMatrix();
+					
+										
+					// seek bar line
+					ofSetColor(255, 80);
+					
 					ofDrawRectangle(wp + ip + SEEKBAR_PLAY_WIDTH, SEEKBAR_HEIGHT / 2 - 1,
 									ww - SEEKBAR_PLAY_WIDTH - SEEKBAR_TIME_WIDTH - wp * 2 - ip, 1);
 					
-					ofPopStyle();
-					ofPopMatrix();
 				}
+				ofPopStyle();
+				ofPopMatrix();
 				
 				// seek bar
 				static int frame = 0;
@@ -303,7 +355,7 @@ public:
 				ImGui::PushItemWidth(-SEEKBAR_TIME_WIDTH);
 				ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0, 0, 0, 0));
 				
-				if (ImGui::SliderInt("###Seekbar", &frame, 0, duration - 1, "")) {
+				if (ImGui::SliderInt("###Seekbar", &frame, 0, duration - 1, "") && !isRecording) {
 					isPlaying = false;
 					currentTime = (float)frame / frameRate;
 				}
@@ -311,21 +363,12 @@ public:
 				ImGui::PopStyleColor();
 				ImGui::PopItemWidth();
 				
-				
 				// timecode
-				static char timeLabel[128];
-				
-				if (timeDisplayMode == TIMECODE) {
-					static int seconds, minutes;
-					seconds = lastRenderedFrame / frameRate;
-					minutes = seconds / 60;
-					sprintf(timeLabel, "%02d:%02d###TimeDisplay", minutes, seconds);
-				} else {
-					sprintf(timeLabel, "%dF###TimeDisplay", lastRenderedFrame);
-				}
+				static char timeDisplay[128];
+				sprintf(timeDisplay, "%s###TimeDisplay", timeText);
 				
 				ImGui::SameLine();
-				if (ImGui::Button(timeLabel, ImVec2(-1, -1))) {
+				if (ImGui::Button(timeDisplay, ImVec2(-1, -1))) {
 					timeDisplayMode = timeDisplayMode == TIMECODE ? FRAMES : TIMECODE;
 				}
 			
@@ -382,6 +425,10 @@ private:
 	
 	void keyPressed(ofKeyEventArgs & args) {
 		
+		if (isRecording) {
+			return;
+		}
+		
 		float frameDuration = 1.0f / frameRate;
 		
 		switch (args.key) {
@@ -406,6 +453,8 @@ private:
 	stringstream	ss;
 	string			errorMessage;
 	
+	char			timeText[128];
+	
 	float			remainingReloadDisplayTime = 0.0f;
 	
 	int				duration = 120;
@@ -418,6 +467,7 @@ private:
 	bool			compileSucceed;
 	TimeDisplayMode	timeDisplayMode = FRAMES;
 	bool			isPlaying = true;
+	bool			isRecording = false;
 	
 	int				targetSize[2];
 	
