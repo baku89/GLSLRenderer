@@ -16,6 +16,8 @@
 #define SEEKBAR_PLAY_WIDTH		40
 #define SEEKBAR_TIME_WIDTH		60
 
+#define RELOAD_DISPLAY_DURATION	0.5
+
 
 enum TimeDisplayMode {
 	TIMECODE,
@@ -29,6 +31,8 @@ public:
 	
 	void setup() {
 		loadShader(DEFAULT_SHADER_PATH);
+		
+		ofAddListener(ofEvents().keyPressed, this, &GLSLManager::keyPressed);
 	}
 	
 	void loadShader(string path) {
@@ -111,10 +115,11 @@ public:
 	
 	void update() {
 		
-		static int lm = filesystem::last_write_time(file);
+		static int lm;
+		lm = filesystem::last_write_time(file);
 		
 		if (lm != lastModified) {
-			loadShader(file.getAbsolutePath());
+			reloadShader();
 		}
 		
 		// update
@@ -126,13 +131,15 @@ public:
 		deltaTime = elapsedTime - prevElapsedTime;
 		prevElapsedTime = elapsedTime;
 		
+		// frame
 		if (isPlaying) {
 			currentTime = fmod(currentTime + deltaTime, (float)duration / frameRate);
 		}
 		
 		renderFrame(currentTime * frameRate);
 		
-		
+		// reload display
+		remainingReloadDisplayTime = std::max(0.0f, remainingReloadDisplayTime - deltaTime);
 	}
 	
 	void draw() {
@@ -142,24 +149,45 @@ public:
 		if (compileSucceed) {
 			ofPushMatrix();
 			{
-				float screenW = ofGetWidth() - GUI_WIDTH;
-				float screenH = ofGetHeight();
+				static float screenW, screenH, w, h, sx, sy, s, tx, ty, fw, fh;
 				
-				float w = target.getWidth();
-				float h = target.getHeight();
+				screenW = ofGetWidth() - GUI_WIDTH;
+				screenH = ofGetHeight();
 				
-				float sx = screenW / w;
-				float sy = screenH / h;
+				w = target.getWidth();
+				h = target.getHeight();
 				
-				float s = min(sx, sy);
+				sx = screenW / w;
+				sy = screenH / h;
 				
-				float tx = (screenW - w * s) * .5;
-				float ty = (screenH - h * s) * .5;
+				s = min(sx, sy);
+				
+				tx = (screenW - w * s) * .5;
+				ty = (screenH - h * s) * .5;
+				
+				fw = w * s;
+				fh = h * s;
 				
 				ofTranslate(GUI_WIDTH + tx, ty + h * s);
 				
 				ofScale(1, -1);
-				target.draw(0, 0, w * s, h * s);
+				target.draw(0, 0, fw, fh);
+				
+				
+				if (remainingReloadDisplayTime > 0) {
+					ofPushStyle();
+					
+					ofSetColor(255, 255 * (remainingReloadDisplayTime / RELOAD_DISPLAY_DURATION));
+					
+					const float l = 8;
+					
+					ofDrawRectangle(0, 0, fw - l, l);
+					ofDrawRectangle(fw - l, 0, l, fh - l);
+					ofDrawRectangle(l, fh - l, fw - l, l);
+					ofDrawRectangle(0, l, l, fh - l);
+					
+					ofPopStyle();
+				}
 			}
 			ofPopMatrix();
 		
@@ -214,10 +242,13 @@ public:
 			ImGui::PopStyleVar();
 		}
 		
-		ImGui::ShowStyleEditor();
-		
 		// playbar
-		{
+		static ofRectangle shaderArea(GUI_WIDTH, 0, 0, 0);
+		shaderArea.width = ofGetWidth();
+		shaderArea.height = ofGetHeight();
+		
+		
+		if (shaderArea.inside(ofGetMouseX(), ofGetMouseY())) {
 			float ww = min(ofGetWidth() - GUI_WIDTH - SEEKBAR_MARGIN * 2, SEEKBAR_WIDTH);
 			
 			ImVec2 pos( (GUI_WIDTH + ofGetWidth()) / 2.0f - ww / 2.0f, ofGetHeight() - SEEKBAR_HEIGHT - SEEKBAR_MARGIN);
@@ -342,9 +373,38 @@ private:
 		lastRenderedFrame = frame;
 	}
 	
+	void reloadShader() {
+		remainingReloadDisplayTime = RELOAD_DISPLAY_DURATION;
+		loadShader(file.getAbsolutePath());
+	}
+	
+	void keyPressed(ofKeyEventArgs & args) {
+		
+		float frameDuration = 1.0f / frameRate;
+		
+		switch (args.key) {
+			case ' ':
+				isPlaying = !isPlaying;
+				break;
+			case 'r':
+				reloadShader();
+				break;
+			case OF_KEY_LEFT:
+				isPlaying = false;
+				currentTime = max((float)currentTime - frameDuration, 0.0f);
+				break;
+			case OF_KEY_RIGHT:
+				isPlaying = false;
+				currentTime = min(currentTime + frameDuration, (float)(duration - 1) / frameRate);
+				break;
+		}
+	}
+	
 	
 	stringstream	ss;
 	string			errorMessage;
+	
+	float			remainingReloadDisplayTime = 0.0f;
 	
 	int				duration = 120;
 	int				frameRate = 30;
@@ -354,7 +414,7 @@ private:
 	int				lastRenderedFrame = 0;
 	
 	bool			compileSucceed;
-	TimeDisplayMode	timeDisplayMode;
+	TimeDisplayMode	timeDisplayMode = FRAMES;
 	bool			isPlaying = true;
 	
 	int				targetSize[2];
