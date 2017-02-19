@@ -10,8 +10,10 @@
 
 #define DEFAULT_SHADER_PATH		ofToDataPath("default.frag")
 
-class GLSLRenderer {
+class GLSLManager {
 public:
+	
+	ofEvent<int> frameRateUpdated;
 	
 	void setup() {
 		loadShader(DEFAULT_SHADER_PATH);
@@ -59,6 +61,10 @@ public:
 		
 		settings.pushTag("renderer");
 		
+		duration = settings.getValue("duration", duration);
+		frameRate = settings.getValue("frameRate", frameRate);
+		ofNotifyEvent(frameRateUpdated, frameRate, this);
+		
 		int w = settings.getValue("width", 512);
 		int h = settings.getValue("height", 512);
 		setSize(w, h);
@@ -73,6 +79,9 @@ public:
 		
 		settings.addTag("renderer");
 		settings.pushTag("renderer");
+		
+		settings.setValue("duration", duration);
+		settings.setValue("frameRate", frameRate);
 		
 		settings.setValue("width", (int)target.getWidth());
 		settings.setValue("height", (int)target.getHeight());
@@ -95,24 +104,10 @@ public:
 		if (lm != lastModified) {
 			loadShader(file.getAbsolutePath());
 		}
-	}
-	
-	void render(float time) {
 		
-		target.begin();
-		{
-			ofBackground(0);
-			ofSetColor(255);
-			
-			shader.begin();
-			shader.setUniform1f("u_time", time);
-			shader.setUniform2f("u_resolution", target.getWidth(), target.getHeight());
-			
-			ofDrawRectangle(0, 0, target.getWidth(), target.getHeight());
-			
-			shader.end();
-		}
-		target.end();
+		// update
+		int frame = (int)(ofGetElapsedTimef() * frameRate) % duration;
+		renderFrame(frame);
 	}
 	
 	void draw() {
@@ -154,6 +149,22 @@ public:
 		
 		if ((isOpen = ImGui::CollapsingHeader("Renderer"))) {
 			
+			// progress bar
+			float progress = (float)lastRenderedFrame / duration;
+			float time = (float)lastRenderedFrame / frameRate;
+			static char timeOverlay[512];
+			sprintf(timeOverlay, "Current: %.1fs", time);
+			ImGui::ProgressBar(progress, ImVec2(-1, 0), timeOverlay);
+			
+			ImGui::Separator();
+			
+			// render settings
+			ImGui::DragInt("Duration", &duration, 1.0f, 1, 9000, "%.0fF");
+			
+			if (ImGui::SliderInt("Frame Rate", &frameRate, 8, 90)) {
+				ofNotifyEvent(frameRateUpdated, frameRate, this);
+			}
+			
 			ImGui::DragInt2("", targetSize, 1.0f, 4, 4096);
 			ImGui::SameLine();
 			
@@ -166,7 +177,6 @@ public:
 			}
 			
 			ImGui::Separator();
-		
 		}
 		
 		if (!compileSucceed) {
@@ -191,14 +201,46 @@ public:
 	
 	float getWidth()	{ return target.getWidth(); }
 	float getHeight()	{ return target.getHeight(); }
+	int getFrameRate()	{ return frameRate; }
+	int getDuration()	{ return duration; }
 	
-	void readToPixels(ofPixels &pixels) {
+	void readToPixelsAtFrame(int frame, ofPixels &pixels) {
+		renderFrame(frame);
 		target.getTexture().readToPixels(pixels);
 	}
 	
 private:
+	
+	void renderFrame(int frame) {
+		
+		float time = (float)frame / frameRate;
+		
+		target.begin();
+		{
+			ofBackground(0);
+			ofSetColor(255);
+			
+			shader.begin();
+			shader.setUniform1f("u_time", time);
+			shader.setUniform2f("u_resolution", target.getWidth(), target.getHeight());
+			
+			ofDrawRectangle(0, 0, target.getWidth(), target.getHeight());
+			
+			shader.end();
+		}
+		target.end();
+		
+		lastRenderedFrame = frame;
+	}
+	
+	
 	stringstream	ss;
 	string			errorMessage;
+	
+	int				duration = 120;
+	int				frameRate = 30;
+	
+	int				lastRenderedFrame = 0;
 	
 	bool			compileSucceed;
 	

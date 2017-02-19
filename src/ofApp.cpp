@@ -11,6 +11,7 @@ void ofApp::setup(){
 	// setup window attributes
 	ofSetWindowTitle("GLSL Renderer");
 	ofEnableSmoothing();
+	ofSetFrameRate(60);
 	
 	// setup imgui
 	ImOf::SetFont();
@@ -22,44 +23,36 @@ void ofApp::setup(){
 	
 	// setup
 	glsl.setup();
-	shaderFileManager.setup();
+	shaderFile.setup();
 	
 	// event
-	ofAddListener(shaderFileManager.shaderFileSelected, this, &ofApp::shaderFileSelected);
+	ofAddListener(glsl.frameRateUpdated, this, &ofApp::frameRateUpdated);
+	ofAddListener(shaderFile.shaderFileSelected, this, &ofApp::shaderFileSelected);
+	ofAddListener(vidRecorder.outputFileCompleteEvent, this, &ofApp::recordingComplete);
 	
 	// load settings
 	ofxXmlSettings settings("settings.xml");
-
-	duration = settings.getValue("duration", duration);
-	frameRate = settings.getValue("frameRate", frameRate);
-	ofSetFrameRate(frameRate);
 	
 	glsl.loadSettings(settings);
-	shaderFileManager.loadSettings(settings);
+	shaderFile.loadSettings(settings);
 	
-	ofAddListener(vidRecorder.outputFileCompleteEvent, this, &ofApp::recordingComplete);
+	
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
 	
-	if (exportingStatus == exporting) {
-		time = (float)currentFrame / frameRate;
-	} else {
-		time = fmod(ofGetElapsedTimef(), (float)duration / frameRate);
-	}
+	shaderFile.update();
 	
-	glsl.update();
-	glsl.render(time);
-	
-	shaderFileManager.update();
-	
-	if (exportingStatus == exporting) {
+	if (exportingStatus == stopped) {
+		glsl.update();
 		
-		glsl.readToPixels(pixels);
+	} else if (exportingStatus == exporting) {
+		
+		glsl.readToPixelsAtFrame(currentFrame, pixels);
 		vidRecorder.addFrame(pixels);
 		
-		if (++currentFrame == duration) {
+		if (++currentFrame == glsl.getDuration()) {
 			endExport();
 		}
 	}
@@ -72,7 +65,7 @@ void ofApp::draw(){
 	ofBackground(0);
 	
 	glsl.draw();
-	shaderFileManager.draw();
+	shaderFile.draw();
 	
 	drawImGui();
 }
@@ -84,6 +77,7 @@ void ofApp::beginExport() {
 	if (result.bSuccess && !vidRecorder.isInitialized()) {
 		
 		int w = glsl.getWidth(), h = glsl.getHeight();
+		int frameRate = glsl.getFrameRate();
 		
 		currentFrame = 0;
 		pixels.allocate(w, h, GL_RGB);
@@ -92,10 +86,7 @@ void ofApp::beginExport() {
 		vidRecorder.start();
 		
 		exportingStatus = exporting;
-		
 		ofSetFrameRate(MAX_FPS);
-		
-		ofLogNotice() << "Start!";
 	}
 		
 }
@@ -105,7 +96,7 @@ void ofApp::endExport() {
 	vidRecorder.close();
 	exportingStatus = saving;
 	
-	ofSetFrameRate(frameRate);
+	ofSetFrameRate(glsl.getFrameRate());
 }
 
 
@@ -118,6 +109,10 @@ void ofApp::recordingComplete(ofxVideoRecorderOutputFileCompleteEventArgs& args)
 
 void ofApp::shaderFileSelected(string &path) {
 	glsl.loadShader(path);
+}
+
+void ofApp::frameRateUpdated(int &frameRate) {
+	ofSetFrameRate(frameRate);
 }
 
 //--------------------------------------------------------------
@@ -139,18 +134,6 @@ void ofApp::drawImGui(){
 		
 		if ((isOpen = ImGui::CollapsingHeader("General"))) {
 			
-			static char timeOverlay[512];
-			sprintf(timeOverlay, "Current: %.1fs", time);
-			ImGui::ProgressBar(time / ((float)duration / frameRate), ImVec2(-1, 0), timeOverlay);
-			
-			ImGui::Separator();
-			
-			ImGui::DragInt("Duration", &duration, 1.0f, 1, 9000, "%.0fF");
-			
-			if (ImGui::SliderInt("Frame Rate", &frameRate, 8, 90)) {
-				ofSetFrameRate(frameRate);
-			}
-			
 			if (ImGui::Button("Export")) {
 				
 				beginExport();
@@ -164,8 +147,8 @@ void ofApp::drawImGui(){
 					break;
 				case exporting:
 					static char overlay[512];
-					sprintf(overlay, "Rendering.. (%d / %d)", currentFrame, duration);
-					ImGui::ProgressBar((float)currentFrame / duration, ImVec2(-1, 0), overlay);
+					sprintf(overlay, "Rendering.. (%d / %d)", currentFrame, glsl.getDuration());
+					ImGui::ProgressBar((float)currentFrame / glsl.getDuration(), ImVec2(-1, 0), overlay);
 					break;
 				case saving:
 					ImGui::ProgressBar(1.0f, ImVec2(-1, 0), "Saving..");
@@ -177,7 +160,7 @@ void ofApp::drawImGui(){
 		
 		
 		glsl.drawImGui();
-		shaderFileManager.drawImGui();
+		shaderFile.drawImGui();
 		
 		
 	}
@@ -195,11 +178,8 @@ void ofApp::exit() {
 	// save settings
 	ofxXmlSettings settings;
 	
-	settings.setValue("duration", duration);
-	settings.setValue("frameRate", frameRate);
-	
 	glsl.saveSettings(settings);
-	shaderFileManager.saveSettings(settings);
+	shaderFile.saveSettings(settings);
 	
 	settings.saveFile("settings.xml");
 }
