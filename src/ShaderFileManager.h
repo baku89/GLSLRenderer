@@ -42,6 +42,12 @@ public:
 	
 	void update() {
 		
+		static int lm;
+		lm = filesystem::last_write_time(watchDir);
+		
+		if (lm != lastModified) {
+			reloadDirectory();
+		}
 	}
 	
 	void draw() {
@@ -130,6 +136,8 @@ private:
 				strcpy(fileNames[i], name.c_str());
 			}
 		}
+		
+		lastModified = filesystem::last_write_time(watchDir);
 	}
 	
 	void duplicateSelected(bool alreadyExists = false) {
@@ -171,6 +179,7 @@ private:
 	
 	stringstream	ss;
 	
+	int				lastModified;
 	int				selected = -1;
 	char			**fileNames;
 	
