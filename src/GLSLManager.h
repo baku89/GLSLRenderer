@@ -9,6 +9,18 @@
 #include "Config.h"
 
 #define DEFAULT_SHADER_PATH		ofToDataPath("default.frag")
+#define SEEKBAR_WIDTH			600
+#define SEEKBAR_HEIGHT			40
+#define SEEKBAR_MARGIN			30
+
+#define SEEKBAR_PLAY_WIDTH		40
+#define SEEKBAR_TIME_WIDTH		60
+
+
+enum TimeDisplayMode {
+	TIMECODE,
+	FRAMES
+};
 
 class GLSLManager {
 public:
@@ -99,15 +111,28 @@ public:
 	
 	void update() {
 		
-		int lm = filesystem::last_write_time(file);
+		static int lm = filesystem::last_write_time(file);
 		
 		if (lm != lastModified) {
 			loadShader(file.getAbsolutePath());
 		}
 		
 		// update
-		int frame = (int)(ofGetElapsedTimef() * frameRate) % duration;
-		renderFrame(frame);
+		static float elapsedTime = ofGetElapsedTimef();
+		static float prevElapsedTime = elapsedTime;
+		static float deltaTime = 0;
+		
+		elapsedTime = ofGetElapsedTimef();
+		deltaTime = elapsedTime - prevElapsedTime;
+		prevElapsedTime = elapsedTime;
+		
+		if (isPlaying) {
+			currentTime = fmod(currentTime + deltaTime, (float)duration / frameRate);
+		}
+		
+		renderFrame(currentTime * frameRate);
+		
+		
 	}
 	
 	void draw() {
@@ -149,15 +174,6 @@ public:
 		
 		if ((isOpen = ImGui::CollapsingHeader("Renderer"))) {
 			
-			// progress bar
-			float progress = (float)lastRenderedFrame / duration;
-			float time = (float)lastRenderedFrame / frameRate;
-			static char timeOverlay[512];
-			sprintf(timeOverlay, "Current: %.1fs", time);
-			ImGui::ProgressBar(progress, ImVec2(-1, 0), timeOverlay);
-			
-			ImGui::Separator();
-			
 			// render settings
 			ImGui::DragInt("Duration", &duration, 1.0f, 1, 9000, "%.0fF");
 			
@@ -197,6 +213,99 @@ public:
 			ImGui::PopStyleColor();
 			ImGui::PopStyleVar();
 		}
+		
+		ImGui::ShowStyleEditor();
+		
+		// playbar
+		{
+			float ww = min(ofGetWidth() - GUI_WIDTH - SEEKBAR_MARGIN * 2, SEEKBAR_WIDTH);
+			
+			ImVec2 pos( (GUI_WIDTH + ofGetWidth()) / 2.0f - ww / 2.0f, ofGetHeight() - SEEKBAR_HEIGHT - SEEKBAR_MARGIN);
+			ImVec2 size(ww, SEEKBAR_HEIGHT);
+			ImGui::SetNextWindowPos(pos);
+			ImGui::SetNextWindowSize(size);
+			
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 2);
+			ImGui::PushStyleVar(ImGuiStyleVar_GrabMinSize, 18);
+			ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(0.48f, 0.55f, 0.56f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.13f, 0.14f, 0.17f, 0.5f));
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+			
+			ImGuiStyle& style = ImGui::GetStyle();
+			int		prevGrabRounding = style.GrabRounding;
+			float	prevItemSpacingX = style.ItemSpacing.x;
+			style.GrabRounding = 9;
+			style.ItemSpacing.x = 16;
+			
+			ImGui::Begin("", NULL, ImVec2(0,0), -1.0f, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar);
+			
+			{
+				
+				// toggle play/pause
+				if (ImGui::Button(isPlaying ? "Pause###PlayToggle" : "Play###PlayToggle", ImVec2(SEEKBAR_PLAY_WIDTH, -1))) {
+					isPlaying = !isPlaying;
+				}
+				
+				// seek bar bg
+				{
+					ofPushMatrix();
+					ofPushStyle();
+					ofTranslate(pos.x, pos.y);
+					
+					ofSetColor(255, 80);
+					
+					int wp = style.WindowPadding.x;
+					int ip = style.ItemSpacing.x;
+					
+					ofDrawRectangle(wp + ip + SEEKBAR_PLAY_WIDTH, SEEKBAR_HEIGHT / 2 - 1,
+									ww - SEEKBAR_PLAY_WIDTH - SEEKBAR_TIME_WIDTH - wp * 2 - ip, 1);
+					
+					ofPopStyle();
+					ofPopMatrix();
+				}
+				
+				// seek bar
+				static int frame = 0;
+				frame = lastRenderedFrame;
+				
+				ImGui::SameLine();
+				ImGui::PushItemWidth(-SEEKBAR_TIME_WIDTH);
+				ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0, 0, 0, 0));
+				
+				if (ImGui::SliderInt("###Seekbar", &frame, 0, duration - 1, "")) {
+					isPlaying = false;
+					currentTime = (float)frame / frameRate;
+				}
+				
+				ImGui::PopStyleColor();
+				ImGui::PopItemWidth();
+				
+				
+				// timecode
+				static char timeLabel[128];
+				
+				if (timeDisplayMode == TIMECODE) {
+					int seconds = lastRenderedFrame / frameRate;
+					int minutes = seconds / 60;
+					sprintf(timeLabel, "%02d:%02d###TimeDisplay", minutes, seconds);
+				} else {
+					sprintf(timeLabel, "%dF###TimeDisplay", lastRenderedFrame);
+				}
+				
+				ImGui::SameLine();
+				if (ImGui::Button(timeLabel, ImVec2(-1, -1))) {
+					timeDisplayMode = timeDisplayMode == TIMECODE ? FRAMES : TIMECODE;
+				}
+			
+			}
+			style.GrabRounding = prevGrabRounding;
+			style.ItemSpacing.x = prevItemSpacingX;
+			
+			ImGui::End();
+			ImGui::PopStyleColor(); ImGui::PopStyleColor(); ImGui::PopStyleColor();
+			ImGui::PopStyleVar(); ImGui::PopStyleVar();
+		}
+	
 	}
 	
 	float getWidth()	{ return target.getWidth(); }
@@ -240,9 +349,13 @@ private:
 	int				duration = 120;
 	int				frameRate = 30;
 	
+	float			currentTime = 0;
+	
 	int				lastRenderedFrame = 0;
 	
 	bool			compileSucceed;
+	TimeDisplayMode	timeDisplayMode;
+	bool			isPlaying = true;
 	
 	int				targetSize[2];
 	
