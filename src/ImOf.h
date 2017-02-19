@@ -16,11 +16,18 @@ namespace ImOf
 		font_config.OversampleV = 4;
 		io->Fonts->AddFontFromFileTTF(&ofToDataPath("Karla-Regular.ttf")[0], 14.f, &font_config);
 		io->Fonts->AddFontFromFileTTF(&ofToDataPath("FiraCode-Regular.ttf")[0], 16.f, &font_config);
+		io->Fonts->AddFontFromFileTTF(&ofToDataPath("FiraCode-Regular.ttf")[0], 28.f, &font_config);
 	}
 	
 	inline void PushMonospaceFont() {
 		ImGuiIO * io = &ImGui::GetIO();
 		ImFont *mono = io->Fonts->Fonts[1];
+		ImGui::PushFont(mono);
+	}
+	
+	inline void PushMonospaceLargeFont() {
+		ImGuiIO * io = &ImGui::GetIO();
+		ImFont *mono = io->Fonts->Fonts[2];
 		ImGui::PushFont(mono);
 	}
 	
