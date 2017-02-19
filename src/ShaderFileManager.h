@@ -23,8 +23,8 @@ public:
 		
 		settings.pushTag("shaderFile");
 		
-		ofFilePath filePath;
-		string watchPath = settings.getValue("watchPath", filePath.getUserHomeDir());
+		
+		string watchPath = settings.getValue("watchPath", "");
 		setWatchDirectory(watchPath);
 		
 		settings.popTag();
@@ -64,42 +64,114 @@ public:
 			}
 			
 			ImGui::SameLine();
-			ImGui::Text("%s", watchDir.getAbsolutePath().c_str());
-			
-			{
-				static int index = 1;
-				const char **cNames = const_cast<const char**>(fileNames);
-				
-				ImGui::PushItemWidth(-1);
-				if (ImGui::ListBox("", &index, cNames, IM_ARRAYSIZE(cNames), 8)) {
-					string path = watchDir.getPath(index);
-					
-					ofNotifyEvent(shaderFileSelected, path, this);
-				}
-				ImGui::PopItemWidth();
+			if (ImGui::Button("Reload")) {
+				reloadDirectory();
 			}
 			
-			ImGui::Separator();
+			if (watchDir.size() > 0 && selected >= 0) {
+				ImGui::SameLine();
+				ImGui::Button("Edit");
+			
+				ImGui::SameLine();
+				if (ImGui::Button("Duplicate")) {
+					duplicateSelected();
+				}
+			}
+		
+			const char **cNames = const_cast<const char**>(fileNames);
+			
+			ImGui::PushItemWidth(-1);
+			if (ImGui::ListBox("", &selected, cNames, watchDir.size() == 0 ? 1 : watchDir.size(), 8)) {
+				
+				if (selected < watchDir.size()) {
+					string path = watchDir.getPath(selected);
+					ofNotifyEvent(shaderFileSelected, path, this);
+				}
+			}
+			ImGui::PopItemWidth();
+		
+		ImGui::Separator();
 		}
 	}
 	
 private:
 	
+	void reloadDirectory() {
+		setWatchDirectory(watchDir.getAbsolutePath());
+	}
+	
 	void setWatchDirectory(string path) {
+		
 		watchDir.open(path);
+		
+		if (!watchDir.exists()) {
+			ofFilePath filePath;
+			watchDir.open( filePath.getUserHomeDir() );
+		}
+		
 		watchDir.listDir();
 		
-		// show shader files
 		size_t numFiles = watchDir.size();
-		fileNames = new char*[numFiles];
 		
-		for (int i = 0; i < numFiles; i++) {
-			string name = watchDir.getName(i);
-			fileNames[i] = new char[name.size() + 1];
-			strcpy(fileNames[i], name.c_str());
+		if (numFiles == 0) {
+			
+			string empty = "(No Shader Files)";
+			
+			fileNames = new char*[1];
+			fileNames[0] = new char[empty.size() + 1];
+			strcpy(fileNames[0], empty.c_str());
+			
+		} else {
+			fileNames = new char*[numFiles];
+			
+			for (int i = 0; i < numFiles; i++) {
+				string name = watchDir.getName(i);
+				fileNames[i] = new char[name.size() + 1];
+				strcpy(fileNames[i], name.c_str());
+			}
 		}
 	}
 	
+	void duplicateSelected(bool alreadyExists = false) {
+		
+		string newName = ofSystemTextBoxDialog(alreadyExists ? "Specified file aloready exists. Set another filename." : "Set new filename.");
+		
+		if (newName == "") {
+			return;
+		}
+		
+		string newPath = watchDir.getAbsolutePath() + "/" + newName + ".frag";
+		ofFile duplicated(newPath);
+		
+		if (duplicated.exists()) {
+			duplicateSelected(true);
+			return;
+		}
+		
+		// copy
+		duplicated.create();
+		
+		ofBuffer buffer;
+		ofFile original(watchDir.getPath(selected));
+		buffer = original.readToBuffer();
+		
+		duplicated.setWriteable(true);
+		duplicated.writeFromBuffer(buffer);
+		
+		duplicated << "test";
+		
+		duplicated.close();
+		
+		reloadDirectory();
+	}
+	
+	void openSelected() {
+		
+	}
+	
+	stringstream	ss;
+	
+	int				selected = -1;
 	char			**fileNames;
 	
 	ofDirectory		watchDir;
