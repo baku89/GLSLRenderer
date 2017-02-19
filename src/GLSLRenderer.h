@@ -8,11 +8,13 @@
 #include "ImOf.h"
 #include "Config.h"
 
+#define DEFAULT_SHADER_PATH		ofToDataPath("default.frag")
+
 class GLSLRenderer {
 public:
 	
 	void setup() {
-		loadShader( ofToDataPath("test-shader.frag") );
+		loadShader(DEFAULT_SHADER_PATH);
 	}
 	
 	void loadShader(string path) {
@@ -60,6 +62,9 @@ public:
 		int w = settings.getValue("width", 512);
 		int h = settings.getValue("height", 512);
 		setSize(w, h);
+		
+		string path = settings.getValue("shaderPath", DEFAULT_SHADER_PATH);
+		loadShader(path);
 		
 		settings.popTag();
 	}

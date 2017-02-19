@@ -5,6 +5,8 @@
 
 #include "WindowUtils.h"
 
+#define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
+
 namespace ImOf
 {
 	inline void SetFont() {
@@ -40,7 +42,7 @@ namespace ImOf
 		style.Colors[ImGuiCol_PopupBg]               = ImVec4(0.13f, 0.14f, 0.17f, 0.92f);
 		style.Colors[ImGuiCol_Border]                = ImVec4(0.13f, 0.14f, 0.17f, 0.00f);
 		style.Colors[ImGuiCol_BorderShadow]          = ImVec4(0.13f, 0.14f, 0.17f, 0.00f);
-		style.Colors[ImGuiCol_FrameBg]               = ImVec4(0.20f, 0.22f, 0.27f, 1.00f);
+		style.Colors[ImGuiCol_FrameBg]               = ImVec4(0.17f, 0.19f, 0.23f, 0.55f);
 		style.Colors[ImGuiCol_FrameBgHovered]        = ImVec4(0.00f, 0.63f, 0.75f, 0.78f);
 		style.Colors[ImGuiCol_FrameBgActive]         = ImVec4(0.00f, 0.63f, 0.75f, 1.00f);
 		style.Colors[ImGuiCol_TitleBg]               = ImVec4(0.20f, 0.22f, 0.27f, 1.00f);
@@ -58,7 +60,7 @@ namespace ImOf
 		style.Colors[ImGuiCol_Button]                = ImVec4(0.47f, 0.77f, 0.83f, 0.14f);
 		style.Colors[ImGuiCol_ButtonHovered]         = ImVec4(0.00f, 0.63f, 0.75f, 0.86f);
 		style.Colors[ImGuiCol_ButtonActive]          = ImVec4(0.00f, 0.63f, 0.75f, 1.00f);
-		style.Colors[ImGuiCol_Header]                = ImVec4(0.18f, 0.22f, 0.29f, 0.76f);
+		style.Colors[ImGuiCol_Header]                = ImVec4(0.21f, 0.26f, 0.35f, 0.76f);
 		style.Colors[ImGuiCol_HeaderHovered]         = ImVec4(0.00f, 0.63f, 0.75f, 0.86f);
 		style.Colors[ImGuiCol_HeaderActive]          = ImVec4(0.00f, 0.63f, 0.75f, 1.00f);
 		style.Colors[ImGuiCol_Column]                = ImVec4(0.47f, 0.77f, 0.83f, 0.32f);

@@ -7,6 +7,7 @@
 #include "ofxVideoRecorder.h"
 
 #include "GLSLRenderer.h"
+#include "ShaderFileManager.h"
 
 enum ExportingStatus {
 	stopped,
@@ -28,8 +29,9 @@ public:
 	void beginExport();
 	void endExport();
 	
+	// event
 	void recordingComplete(ofxVideoRecorderOutputFileCompleteEventArgs& args);
-	
+	void shaderFileSelected(string &path);
 
 	void keyPressed(int key);
 	void keyReleased(int key);
@@ -44,7 +46,9 @@ public:
 	void gotMessage(ofMessage msg);
 	
 	ofxImGui::Gui		gui;
+	
 	GLSLRenderer		glsl;
+	ShaderFileManager	shaderFileManager;
 	
 	ofxVideoRecorder    vidRecorder;
 	ofPixels			pixels;

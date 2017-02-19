@@ -22,6 +22,10 @@ void ofApp::setup(){
 	
 	// setup
 	glsl.setup();
+	shaderFileManager.setup();
+	
+	// event
+	ofAddListener(shaderFileManager.shaderFileSelected, this, &ofApp::shaderFileSelected);
 	
 	// load settings
 	ofxXmlSettings settings("settings.xml");
@@ -31,6 +35,7 @@ void ofApp::setup(){
 	ofSetFrameRate(frameRate);
 	
 	glsl.loadSettings(settings);
+	shaderFileManager.loadSettings(settings);
 	
 	ofAddListener(vidRecorder.outputFileCompleteEvent, this, &ofApp::recordingComplete);
 }
@@ -46,6 +51,8 @@ void ofApp::update(){
 	
 	glsl.update();
 	glsl.render(time);
+	
+	shaderFileManager.update();
 	
 	if (exportingStatus == exporting) {
 		
@@ -65,6 +72,7 @@ void ofApp::draw(){
 	ofBackground(0);
 	
 	glsl.draw();
+	shaderFileManager.draw();
 	
 	drawImGui();
 }
@@ -100,8 +108,16 @@ void ofApp::endExport() {
 	ofSetFrameRate(frameRate);
 }
 
+
+//--------------------------------------------------------------
+// events
+
 void ofApp::recordingComplete(ofxVideoRecorderOutputFileCompleteEventArgs& args) {
 	exportingStatus = stopped;
+}
+
+void ofApp::shaderFileSelected(string &path) {
+	glsl.loadShader(path);
 }
 
 //--------------------------------------------------------------
@@ -155,10 +171,13 @@ void ofApp::drawImGui(){
 					ImGui::ProgressBar(1.0f, ImVec2(-1, 0), "Saving..");
 					break;
 			}
+			
+			ImGui::Separator();
 		}
 		
 		
 		glsl.drawImGui();
+		shaderFileManager.drawImGui();
 		
 		
 	}
@@ -180,6 +199,7 @@ void ofApp::exit() {
 	settings.setValue("frameRate", frameRate);
 	
 	glsl.saveSettings(settings);
+	shaderFileManager.saveSettings(settings);
 	
 	settings.saveFile("settings.xml");
 }
