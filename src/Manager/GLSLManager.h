@@ -110,6 +110,7 @@ public:
 	
 	void setSize(int w, int h) {
 		target.allocate(w, h, GL_RGB);
+		renderFbo.allocate(w, h, GL_RGB);
 		targetSize[0] = w;
 		targetSize[1] = h;
 	}
@@ -391,7 +392,22 @@ public:
 	
 	void readToPixelsAtFrame(int frame, ofPixels &pixels) {
 		renderFrame(frame);
-		target.getTexture().readToPixels(pixels);
+		
+		// fix vertical flip
+		renderFbo.begin();
+		ofPushMatrix();
+		{
+			ofBackground(0);
+			ofSetColor(255);
+			
+			ofTranslate(0, target.getHeight());
+			ofScale(1, -1);
+			target.draw(0, 0);
+		}
+		ofPopMatrix();
+		renderFbo.end();
+		
+		renderFbo.readToPixels(pixels);
 	}
 	
 private:
@@ -450,6 +466,7 @@ private:
 		}
 	}
 	
+	ofFbo			renderFbo; // to fix vertical flip when rendering
 	
 	stringstream	ss;
 	string			errorMessage;
