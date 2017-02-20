@@ -19,84 +19,6 @@ public:
 		watchDir.allowExt("fs");
 	}
 	
-	
-	void loadSettings(ofxXmlSettings &settings) {
-		
-		settings.pushTag("shaderFile");
-		
-		
-		string watchPath = settings.getValue("watchPath", "");
-		setWatchDirectory(watchPath);
-		
-		settings.popTag();
-	}
-	
-	void saveSettings(ofxXmlSettings &settings) {
-		
-		settings.addTag("shaderFile");
-		settings.pushTag("shaderFile");
-		
-		settings.setValue("watchPath", watchDir.getAbsolutePath());
-		
-		settings.popTag();
-	}
-	
-	void update() {
-		
-		static int lm;
-		lm = filesystem::last_write_time(watchDir);
-		
-		if (lm != lastModified) {
-			reloadDirectory();
-		}
-	}
-	
-	void drawImGui() {
-		
-		static bool isOpen = true;
-		
-		ImGui::SetNextTreeNodeOpen(isOpen);
-		
-		if ((isOpen = ImGui::CollapsingHeader("File"))) {
-			
-			if (ImGui::Button("Set Folder")) {
-				ofFileDialogResult result = ofSystemLoadDialog("Set Folder", true);
-				if (result.bSuccess) {
-					setWatchDirectory(result.getPath());
-				}
-			}
-			
-			ImGui::SameLine();
-			if (ImGui::Button("Reload")) {
-				reloadDirectory();
-			}
-		
-			const char **cNames = const_cast<const char**>(fileNames);
-			
-			ImGui::PushItemWidth(-1);
-			if (ImGui::ListBox("", &selected, cNames, watchDir.size() == 0 ? 1 : watchDir.size(), 8)) {
-				
-				if (selected < watchDir.size()) {
-					string path = watchDir.getPath(selected);
-					ofNotifyEvent(shaderFileSelected, path, this);
-				}
-			}
-			ImGui::PopItemWidth();
-		
-		ImGui::Separator();
-		}
-	}
-	
-private:
-	
-	void reloadDirectory() {
-		setWatchDirectory(watchDir.getAbsolutePath());
-	}
-	
-	void openDirectory() {
-		
-	}
-	
 	void setWatchDirectory(string path) {
 		
 		watchDir.open(path);
@@ -129,6 +51,89 @@ private:
 		}
 		
 		lastModified = filesystem::last_write_time(watchDir);
+	}
+	
+	
+	void loadSettings(ofxXmlSettings &settings) {
+		
+		settings.pushTag("shaderFile");
+		
+		
+		string watchPath = settings.getValue("watchPath", "");
+		setWatchDirectory(watchPath);
+		
+		settings.popTag();
+	}
+	
+	void saveSettings(ofxXmlSettings &settings) {
+		
+		settings.addTag("shaderFile");
+		settings.pushTag("shaderFile");
+		
+		settings.setValue("watchPath", watchDir.getAbsolutePath());
+		
+		settings.popTag();
+	}
+	
+	void update() {
+		
+		if (watchDir.exists()) {
+			static int lm;
+			lm = filesystem::last_write_time(watchDir);
+			
+			if (lm != lastModified) {
+				reloadDirectory();
+			}
+		}
+	}
+	
+	void drawImGui() {
+		
+		static bool isOpen = true;
+		
+		ImGui::SetNextTreeNodeOpen(isOpen);
+		
+		if ((isOpen = ImGui::CollapsingHeader("File"))) {
+			
+			if (ImGui::Button("Set Folder")) {
+				ofFileDialogResult result = ofSystemLoadDialog("Set Folder", true);
+				if (result.bSuccess) {
+					setWatchDirectory(result.getPath());
+				}
+			}
+			
+			ImGui::SameLine();
+			if (ImGui::Button("Reload")) {
+				reloadDirectory();
+			}
+			
+			ImGui::SameLine();
+			if (ImGui::Button("Open")) {
+				#ifdef TARGET_OSX
+				ofSystem("open " + watchDir.getAbsolutePath());
+				#endif
+			}
+		
+			const char **cNames = const_cast<const char**>(fileNames);
+			
+			ImGui::PushItemWidth(-1);
+			if (ImGui::ListBox("", &selected, cNames, watchDir.size() == 0 ? 1 : watchDir.size(), 7)) {
+				
+				if (selected < watchDir.size()) {
+					string path = watchDir.getPath(selected);
+					ofNotifyEvent(shaderFileSelected, path, this);
+				}
+			}
+			ImGui::PopItemWidth();
+		
+		ImGui::Separator();
+		}
+	}
+	
+private:
+	
+	void reloadDirectory() {
+		setWatchDirectory(watchDir.getAbsolutePath());
 	}
 	
 	void duplicateSelected(bool alreadyExists = false) {

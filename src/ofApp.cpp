@@ -8,6 +8,10 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
 	
+#ifdef RELEASE
+	ofSetDataPathRoot("../Resources/data/");
+#endif
+	
 	// setup window attributes
 	ofSetWindowTitle("GLSL Renderer");
 	ofEnableSmoothing();
@@ -40,6 +44,7 @@ void ofApp::setup(){
 	
 	selectedCodec	= settings.getValue("selectedCodec", selectedCodec);
 	bitrate			= settings.getValue("bitrate", bitrate);
+	exportName		= settings.getValue("exportName", "export");
 	
 	for (auto& manager : managers) {
 		manager->loadSettings(settings);
@@ -75,9 +80,11 @@ void ofApp::draw(){
 }
 
 //--------------------------------------------------------------
-void ofApp::beginExport(Codec codec, int bitrate) {
+void ofApp::beginExport() {
 	
-	ofFileDialogResult result = ofSystemSaveDialog("export." + codec.extension, "Save");
+	Codec codec = codecs[selectedCodec];
+	
+	ofFileDialogResult result = ofSystemSaveDialog(exportName + "." + codec.extension, "Save");
 	
 	if (!result.bSuccess) {
 		return;
@@ -120,6 +127,12 @@ void ofApp::recordingComplete(ofxVideoRecorderOutputFileCompleteEventArgs& args)
 
 void ofApp::shaderFileSelected(string &path) {
 	glsl.loadShader(path);
+	
+	ofFile file(path);
+	if (file.exists()) {
+		exportName = file.getBaseName();
+	}
+	file.close();
 }
 
 void ofApp::frameRateUpdated(int &frameRate) {
@@ -174,8 +187,7 @@ void ofApp::drawImGui(){
 		
 		ImGui::SameLine();
 		if (ImGui::Button("Export", ImVec2(-1, 0))) {
-			Codec &codec = codecs[selectedCodec];
-			beginExport(codec, bitrate);
+			beginExport();
 		}
 		
 		ImGui::Separator();
@@ -200,6 +212,7 @@ void ofApp::exit() {
 	
 	settings.setValue("selectedCodec", selectedCodec);
 	settings.setValue("bitrate", bitrate);
+	settings.setValue("exportName", exportName);
 	
 	for (auto& manager : managers) {
 		manager->saveSettings(settings);
@@ -212,6 +225,12 @@ void ofApp::exit() {
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
+	
+	switch (key) {
+		case 'e':
+			beginExport();
+			break;
+	}
 	
 }
 
@@ -261,6 +280,22 @@ void ofApp::gotMessage(ofMessage msg){
 }
 
 //--------------------------------------------------------------
-void ofApp::dragEvent(ofDragInfo dragInfo){ 
+void ofApp::dragEvent(ofDragInfo dragInfo){
+	
+	for (auto& path : dragInfo.files) {
+		
+		ofFile file(path);
+		
+		if (file.isDirectory()) {
+			shaderFile.setWatchDirectory(path);
+		} else if (file.isFile()) {
+			string ext = file.getExtension();
+			if (ext == "fs" || ext == "frag") {
+				glsl.loadShader(path);
+			}
+		}
+		
+		
+	}
 
 }
