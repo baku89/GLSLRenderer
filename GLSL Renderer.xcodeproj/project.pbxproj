@@ -389,7 +389,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ \"${CONFIGURATION}\" = \"Release\" ]; then\n\nBUNDLE_ID=$(/usr/libexec/PlistBuddy -c \"Print CFBundleVersion\" \"${PROJECT_DIR}/${INFOPLIST_FILE}\")\n\n# copy data path\ncp -R \"bin/data\" \"$TARGET_BUILD_DIR/$PRODUCT_NAME.app/Contents/Resources\"\nrm \"$TARGET_BUILD_DIR/$PRODUCT_NAME.app/Contents/Resources/data/settings.xml\"\n\n# rewrite readme\nsed -i -e \"s|\\(<!--VERSION-->\\).*\\(<!--/VERSION-->\\)|\\1v$BUNDLE_ID\\2|g\" README.md\nrm README.md-e\n\n# create zip\ncd bin\nzip -r -X \"releases/GLSLRenderer_v${BUNDLE_ID}_macOS.zip\" \"GLSL Renderer.app\"\n\nfi";
+			shellScript = "if [ \"${CONFIGURATION}\" = \"Release\" ]; then\n\nBUNDLE_ID=$(/usr/libexec/PlistBuddy -c \"Print CFBundleVersion\" \"${PROJECT_DIR}/${INFOPLIST_FILE}\")\n\n# copy data path\ncp -R \"bin/data\" \"$TARGET_BUILD_DIR/$PRODUCT_NAME.app/Contents/Resources\"\nrm \"$TARGET_BUILD_DIR/$PRODUCT_NAME.app/Contents/Resources/data/settings.xml\"\n\n# rewrite readme\nsed -i -e \"s|\\(<!--VERSION-->\\).*\\(<!--/VERSION-->\\)|\\1v$BUNDLE_ID\\2|g\" README.md\nrm README.md-e\n\n# create zip\ncd \"$TARGET_BUILD_DIR\"\nzip -r -X \"releases/${PRODUCT_NAME// /_}_v${BUNDLE_ID}_macOS.zip\" \"$PRODUCT_NAME.app\"\n\nfi";
 		};
 		E4B6FFFD0C3F9AB9008CF71C /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
