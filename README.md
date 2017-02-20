@@ -12,6 +12,14 @@ GLSL Rendering tool for video production use. The app can export GLSL image usin
 
 Develped by [Baku Hashimoto](http://baku89.com)
 
+This app passes some uniforms same as Patricio Gonzalez Vivo's [The Book of Shaders Editor](http://editor.thebookofshaders.com/). Please see the [instruction](http://thebookofshaders.com/03/) for more detailed information.
+
+```glsl
+uniform vec2 u_resolution; // Canvas size (width,height)
+uniform vec2 u_mouse;      // mouse position in screen pixels
+uniform float u_time;     // Time in seconds since load 
+```
+
 ## License
 
 GLSL Renderer is published under a MIT License. See the included [LISENCE file](./LICENSE).
