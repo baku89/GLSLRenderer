@@ -6,6 +6,7 @@
 #include "ofxImGui.h"
 #include "ofxVideoRecorder.h"
 
+#include "BaseManager.h"
 #include "GLSLManager.h"
 #include "ShaderFileManager.h"
 
@@ -52,23 +53,24 @@ public:
 	void dragEvent(ofDragInfo dragInfo);
 	void gotMessage(ofMessage msg);
 	
-	ofxImGui::Gui		gui;
+	ofxImGui::Gui			gui;
 	
-	GLSLManager			glsl;
-	ShaderFileManager	shaderFile;
+	vector<BaseManager*>	managers;
+	GLSLManager				glsl;
+	ShaderFileManager		shaderFile;
 	
-	ofxVideoRecorder    vidRecorder;
-	ofPixels			pixels;
+	ofxVideoRecorder		vidRecorder;
+	ofPixels				pixels;
 	
 	// params
 	
-	ExportingStatus		exportingStatus = stopped;
+	ExportingStatus			exportingStatus = stopped;
 	
-	int					currentFrame;
+	int						currentFrame;
 	
-	vector<Codec>		codecs;
-	int					selectedCodec = 0;
-	int					bitrate = 800;
+	vector<Codec>			codecs;
+	int						selectedCodec = 0;
+	int						bitrate = 800;
 	
 	
 };
