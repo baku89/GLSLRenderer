@@ -70,16 +70,6 @@ public:
 			if (ImGui::Button("Reload")) {
 				reloadDirectory();
 			}
-			
-			if (watchDir.size() > 0 && selected >= 0) {
-				ImGui::SameLine();
-				ImGui::Button("Edit");
-			
-				ImGui::SameLine();
-				if (ImGui::Button("Duplicate")) {
-					duplicateSelected();
-				}
-			}
 		
 			const char **cNames = const_cast<const char**>(fileNames);
 			
@@ -101,6 +91,10 @@ private:
 	
 	void reloadDirectory() {
 		setWatchDirectory(watchDir.getAbsolutePath());
+	}
+	
+	void openDirectory() {
+		
 	}
 	
 	void setWatchDirectory(string path) {

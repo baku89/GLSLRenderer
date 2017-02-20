@@ -11,13 +11,15 @@
 
 #define DEFAULT_SHADER_PATH		ofToDataPath("default.frag")
 #define SEEKBAR_WIDTH			600
-#define SEEKBAR_HEIGHT			40
+#define SEEKBAR_HEIGHT			41
 #define SEEKBAR_MARGIN			30
 
 #define SEEKBAR_PLAY_WIDTH		30
 #define SEEKBAR_TIME_WIDTH		60
 
 #define RELOAD_DISPLAY_DURATION	0.5
+
+#define REC_COLOR				0xDD4444FF
 
 
 enum TimeDisplayMode {
@@ -197,7 +199,7 @@ public:
 					ofPushStyle();
 					
 					if (isRecording) {
-						ofSetColor(255, 0, 0);
+						ofSetHexColor(REC_COLOR >> 8);
 					} else {
 						ofSetColor(255, 255 * (remainingReloadDisplayTime / RELOAD_DISPLAY_DURATION));
 					}
@@ -228,9 +230,10 @@ public:
 		if ((isOpen = ImGui::CollapsingHeader("Renderer"))) {
 			
 			// render settings
+			ImGui::PushItemWidth(-100);
 			ImGui::DragInt("Duration", &duration, 1.0f, 1, 9000, "%.0fF");
 			
-			if (ImGui::SliderInt("Frame Rate", &frameRate, 8, 90)) {
+			if (ImGui::SliderInt("Frame Rate", &frameRate, 8, 60)) {
 				ofNotifyEvent(frameRateUpdated, frameRate, this);
 			}
 			
@@ -238,13 +241,14 @@ public:
 			ImGui::SameLine();
 			
 			if (target.getWidth() != targetSize[0] || target.getHeight() != targetSize[1]) {
-				if (ImGui::Button("Update Size")) {
+				if (ImGui::Button("Update Size", ImVec2(-1, 0))) {
 					setSize(targetSize[0], targetSize[1]);
 				}
 			} else {
 				ImGui::Text("Size");
 			}
 			
+			ImGui::PopItemWidth();
 			ImGui::Separator();
 		}
 		
@@ -281,89 +285,38 @@ public:
 			ImGui::SetNextWindowPos(pos);
 			ImGui::SetNextWindowSize(size);
 			
+			ImGuiStyle& style = ImGui::GetStyle();
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 2);
-			ImGui::PushStyleVar(ImGuiStyleVar_GrabMinSize, 18);
-			ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(0.48f, 0.55f, 0.56f, 1.00f));
 			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.13f, 0.14f, 0.17f, 0.5f));
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
 			
-			ImGuiStyle& style = ImGui::GetStyle();
-			const int	prevGrabRounding = style.GrabRounding;
 			const float	prevItemSpacingX = style.ItemSpacing.x;
-			style.GrabRounding = 9;
 			style.ItemSpacing.x = 16;
 			
 			ImGui::Begin("", NULL, ImVec2(0,0), -1.0f, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar);
 			{
 				// toggle play/pause
 				if (isRecording) {
+					static ImVec2 pos, itemSize;
+					pos = ImGui::GetCursorScreenPos();
+					itemSize = ImOf::CalcItemSize(ImVec2(SEEKBAR_PLAY_WIDTH, -1));
+					
+					ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(pos.x + itemSize.x / 2, pos.y + itemSize.y / 2), 7.0f, REC_COLOR);
 					ImGui::SameLine(SEEKBAR_PLAY_WIDTH);
+					
 				} else {
-					if (ImGui::Button("###PlayToggle", ImVec2(SEEKBAR_PLAY_WIDTH, -1))) {
-						isPlaying = !isPlaying;
-					}
+					ImOf::PlayToggle("###PlayToggle", &isPlaying, ImVec2(SEEKBAR_PLAY_WIDTH, -1));
 				}
-				
-				// some other graphics
-				ofPushMatrix();
-				ofPushStyle();
-				{
-					ofTranslate(pos.x, pos.y);
-					
-					const int wp = style.WindowPadding.x;
-					const int ip = style.ItemSpacing.x;
-					
-					// icon
-					ofPushMatrix();
-					{
-						ofTranslate(wp + SEEKBAR_PLAY_WIDTH / 2, SEEKBAR_HEIGHT / 2 - 1);
-						
-						if (isRecording) {
-							
-							ofSetColor(255, 0, 0);
-							ofDrawCircle(0, 0,  7.0);
-							
-						} else {
-						
-							ofSetColor(255);
-						
-							if (isPlaying) {
-								ofDrawRectangle(+2, -7, 4, 14);
-								ofScale(-1, 1);
-								ofDrawRectangle(+2, -7, 4, 14);
-							} else {
-								ofDrawTriangle(7, 0, -4, -7, -4, 7);
-							}
-						}
-					}
-					ofPopMatrix();
-					
-										
-					// seek bar line
-					ofSetColor(255, 80);
-					
-					ofDrawRectangle(wp + ip + SEEKBAR_PLAY_WIDTH, SEEKBAR_HEIGHT / 2 - 1,
-									ww - SEEKBAR_PLAY_WIDTH - SEEKBAR_TIME_WIDTH - wp * 2 - ip, 1);
-					
-				}
-				ofPopStyle();
-				ofPopMatrix();
 				
 				// seek bar
 				static int frame = 0;
 				frame = lastRenderedFrame;
 				
 				ImGui::SameLine();
-				ImGui::PushItemWidth(-SEEKBAR_TIME_WIDTH);
-				ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0, 0, 0, 0));
-				
-				if (ImGui::SliderInt("###Seekbar", &frame, 0, duration - 1, "") && !isRecording) {
+				if (ImOf::Seekbar("###Seekbar", &frame, 0, duration - 1, ImVec2(-SEEKBAR_TIME_WIDTH, -1)) && !isRecording) {
 					isPlaying = false;
 					currentTime = (float)frame / frameRate;
 				}
-				
-				ImGui::PopStyleColor();
-				ImGui::PopItemWidth();
 				
 				// timecode
 				static char timeDisplay[128];
@@ -375,14 +328,12 @@ public:
 				}
 			
 			}
-			style.GrabRounding = prevGrabRounding;
 			style.ItemSpacing.x = prevItemSpacingX;
 			
 			ImGui::End();
-			ImGui::PopStyleColor(); ImGui::PopStyleColor(); ImGui::PopStyleColor();
-			ImGui::PopStyleVar(); ImGui::PopStyleVar();
+			ImGui::PopStyleColor(); ImGui::PopStyleColor();
+			ImGui::PopStyleVar();
 		}
-	
 	}
 	
 	float getWidth()	{ return target.getWidth(); }

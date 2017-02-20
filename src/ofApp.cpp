@@ -165,6 +165,7 @@ void ofApp::drawImGui(){
 		
 		ImGui::PushItemWidth(80);
 		ImGui::Combo("", &selectedCodec, codecLabels, codecNum);
+		ImGui::PopItemWidth();
 		
 		ImGui::SameLine();
 		ImGui::PushItemWidth(50);
