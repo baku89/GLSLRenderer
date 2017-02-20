@@ -33,7 +33,7 @@ public:
 	
 	void exit();
 	
-	void beginExport(Codec codec, int bitrate);
+	void beginExport();
 	void endExport();
 	
 	// event
@@ -71,6 +71,7 @@ public:
 	vector<Codec>			codecs;
 	int						selectedCodec = 0;
 	int						bitrate = 800;
+	string					exportName;
 	
 	
 };

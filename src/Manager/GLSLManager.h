@@ -30,7 +30,7 @@ enum TimeDisplayMode {
 class GLSLManager : public BaseManager {
 public:
 	
-	ofEvent<int> frameRateUpdated;
+	ofEvent<int>	frameRateUpdated;
 	
 	void setup() {
 		loadShader(DEFAULT_SHADER_PATH);
@@ -39,6 +39,14 @@ public:
 	}
 	
 	void loadShader(string path) {
+		
+		file.open(path);
+		
+		if (!file.exists()) {
+			compileSucceed = false;
+			errorMessage = "File does not exist";
+			return;
+		}
 		
 		ss.str("");
 		std::streambuf *old = std::cerr.rdbuf(ss.rdbuf());
@@ -70,8 +78,7 @@ public:
 
 			errorMessage = infoBuffer.getText() + "\n" + lines;
 		}
-		
-		file.open(path);
+			
 		lastModified = filesystem::last_write_time(file);
 	}
 	
@@ -127,11 +134,13 @@ public:
 	
 	void update() {
 		
-		static int lm;
-		lm = filesystem::last_write_time(file);
-		
-		if (lm != lastModified) {
-			reloadShader();
+		if (file.exists()) {
+			static int lm;
+			lm = filesystem::last_write_time(file);
+			
+			if (lm != lastModified) {
+				reloadShader();
+			}
 		}
 		
 		// update
@@ -216,7 +225,7 @@ public:
 			}
 			ofPopMatrix();
 		
-		}
+		}  
 	}
 	
 	char* getTimeText() { return timeText; }
@@ -228,6 +237,12 @@ public:
 		ImGui::SetNextTreeNodeOpen(isOpen);
 		
 		if ((isOpen = ImGui::CollapsingHeader("Renderer"))) {
+			
+			if (ImGui::Button(file.getFileName().c_str(), ImVec2(-1, 30))) {
+				#ifdef TARGET_OSX
+				ofSystem("open " + file.getAbsolutePath());
+				#endif
+			}
 			
 			// render settings
 			ImGui::PushItemWidth(-100);
@@ -275,9 +290,10 @@ public:
 		static ofRectangle shaderArea(GUI_WIDTH, 0, 0, 0);
 		shaderArea.width = ofGetWidth();
 		shaderArea.height = ofGetHeight();
+		static bool mouseOnCanvas;
+		mouseOnCanvas = shaderArea.inside(ofGetMouseX(), ofGetMouseY());
 		
-		
-		if (isRecording || shaderArea.inside(ofGetMouseX(), ofGetMouseY())) {
+		if (compileSucceed && (isRecording || mouseOnCanvas)) {
 			float ww = min(ofGetWidth() - GUI_WIDTH - SEEKBAR_MARGIN * 2, SEEKBAR_WIDTH);
 			
 			ImVec2 pos( (GUI_WIDTH + ofGetWidth()) / 2.0f - ww / 2.0f, ofGetHeight() - SEEKBAR_HEIGHT - SEEKBAR_MARGIN);
@@ -302,7 +318,7 @@ public:
 					itemSize = ImOf::CalcItemSize(ImVec2(SEEKBAR_PLAY_WIDTH, -1));
 					
 					ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(pos.x + itemSize.x / 2, pos.y + itemSize.y / 2), 7.0f, REC_COLOR);
-					ImGui::SameLine(SEEKBAR_PLAY_WIDTH);
+					ImGui::InvisibleButton("###Rec",ImVec2(SEEKBAR_PLAY_WIDTH, -1));
 					
 				} else {
 					ImOf::PlayToggle("###PlayToggle", &isPlaying, ImVec2(SEEKBAR_PLAY_WIDTH, -1));

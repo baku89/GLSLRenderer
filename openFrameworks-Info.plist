@@ -15,8 +15,8 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>1.0</string>
+	<string>0.1</string>
 	<key>CFBundleIconFile</key>
-	<string>${ICON}</string>
+	<string>glsl-renderer.icns</string>
 </dict>
 </plist>
