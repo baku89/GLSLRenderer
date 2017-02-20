@@ -79,7 +79,8 @@
 		9241A69D1E5754FE009C0F4E /* ImOf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ImOf.h; sourceTree = "<group>"; };
 		9241A69F1E575503009C0F4E /* WindowUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WindowUtils.h; sourceTree = "<group>"; };
 		9241A6A01E575503009C0F4E /* WindowUtils.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = WindowUtils.mm; sourceTree = "<group>"; };
-		9294B8D91E58FC4500CCEE19 /* ShaderFileManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ShaderFileManager.h; sourceTree = "<group>"; };
+		928DECA21E5AC13000DD6606 /* BaseManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BaseManager.h; path = Manager/BaseManager.h; sourceTree = "<group>"; };
+		9294B8D91E58FC4500CCEE19 /* ShaderFileManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ShaderFileManager.h; path = Manager/ShaderFileManager.h; sourceTree = "<group>"; };
 		92C9A3CA1E58151500B1495F /* Config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Config.h; sourceTree = "<group>"; };
 		9CC36552DD0A47E758D71FB5 /* imgui_demo.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 30; name = imgui_demo.cpp; path = ../../../addons/ofxImGui/libs/imgui/src/imgui_demo.cpp; sourceTree = SOURCE_ROOT; };
 		9E02D9F3A04B5573758EBCF8 /* imgui_draw.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 30; name = imgui_draw.cpp; path = ../../../addons/ofxImGui/libs/imgui/src/imgui_draw.cpp; sourceTree = SOURCE_ROOT; };
@@ -87,7 +88,7 @@
 		B462DABAC6A023A1D88702C7 /* BaseTheme.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = BaseTheme.h; path = ../../../addons/ofxImGui/src/BaseTheme.h; sourceTree = SOURCE_ROOT; };
 		BB135DAC13404496A7B0FA44 /* ofxVideoRecorder.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = ofxVideoRecorder.h; path = ../../../addons/ofxVideoRecorder/src/ofxVideoRecorder.h; sourceTree = SOURCE_ROOT; };
 		CB5C15EA0881D35A88C22937 /* EngineOpenGLES.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = EngineOpenGLES.h; path = ../../../addons/ofxImGui/src/EngineOpenGLES.h; sourceTree = SOURCE_ROOT; };
-		D11E1A59CD185D88403795F0 /* GLSLManager.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = GLSLManager.h; path = src/GLSLManager.h; sourceTree = SOURCE_ROOT; };
+		D11E1A59CD185D88403795F0 /* GLSLManager.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = GLSLManager.h; path = src/Manager/GLSLManager.h; sourceTree = SOURCE_ROOT; };
 		D7C7BDAD29F580A47FF56B52 /* BaseEngine.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 30; name = BaseEngine.cpp; path = ../../../addons/ofxImGui/src/BaseEngine.cpp; sourceTree = SOURCE_ROOT; };
 		D91100C1FBA245AD6CB55BD3 /* ofxImGui.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = ofxImGui.h; path = ../../../addons/ofxImGui/src/ofxImGui.h; sourceTree = SOURCE_ROOT; };
 		E135C7F22D40FCFD9C5AB94B /* imgui.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = imgui.h; path = ../../../addons/ofxImGui/libs/imgui/src/imgui.h; sourceTree = SOURCE_ROOT; };
@@ -235,6 +236,7 @@
 		92E0BE601E59C58700BC4828 /* Manager */ = {
 			isa = PBXGroup;
 			children = (
+				928DECA21E5AC13000DD6606 /* BaseManager.h */,
 				D11E1A59CD185D88403795F0 /* GLSLManager.h */,
 				9294B8D91E58FC4500CCEE19 /* ShaderFileManager.h */,
 			);

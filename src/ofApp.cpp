@@ -23,8 +23,12 @@ void ofApp::setup(){
 	codecs.push_back((Codec){"MPEG4", "mpeg4", "mov"});
 	
 	// setup
-	glsl.setup();
-	shaderFile.setup();
+	managers.push_back(&glsl);
+	managers.push_back(&shaderFile);
+	
+	for (auto& manager : managers) {
+		manager->setup();
+	}
 	
 	// event
 	ofAddListener(glsl.frameRateUpdated, this, &ofApp::frameRateUpdated);
@@ -37,15 +41,17 @@ void ofApp::setup(){
 	selectedCodec	= settings.getValue("selectedCodec", selectedCodec);
 	bitrate			= settings.getValue("bitrate", bitrate);
 	
-	glsl.loadSettings(settings);
-	shaderFile.loadSettings(settings);
+	for (auto& manager : managers) {
+		manager->loadSettings(settings);
+	}
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
 	
-	glsl.update();
-	shaderFile.update();
+	for (auto& manager : managers) {
+		manager->update();
+	}
 	
 	if (exportingStatus == exporting) {
 		
@@ -64,7 +70,6 @@ void ofApp::draw(){
 	ofBackground(0);
 	
 	glsl.draw();
-	shaderFile.draw();
 	
 	drawImGui();
 }
@@ -174,13 +179,11 @@ void ofApp::drawImGui(){
 		
 		ImGui::Separator();
 		
-		glsl.drawImGui();
-		shaderFile.drawImGui();
-		
-		
+		for (auto& manager : managers) {
+			manager->drawImGui();
+		}
 	}
 	ImGui::End();
-	
 	
 	gui.end();
 	
@@ -197,8 +200,9 @@ void ofApp::exit() {
 	settings.setValue("selectedCodec", selectedCodec);
 	settings.setValue("bitrate", bitrate);
 	
-	glsl.saveSettings(settings);
-	shaderFile.saveSettings(settings);
+	for (auto& manager : managers) {
+		manager->saveSettings(settings);
+	}
 	
 	settings.saveFile("settings.xml");
 }

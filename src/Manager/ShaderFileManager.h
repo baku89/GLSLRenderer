@@ -7,8 +7,9 @@
 
 #include "ImOf.h"
 #include "Config.h"
+#include "BaseManager.h"
 
-class ShaderFileManager {
+class ShaderFileManager : public BaseManager {
 public:
 	
 	ofEvent<string> shaderFileSelected;
@@ -48,10 +49,6 @@ public:
 		if (lm != lastModified) {
 			reloadDirectory();
 		}
-	}
-	
-	void draw() {
-		
 	}
 	
 	void drawImGui() {

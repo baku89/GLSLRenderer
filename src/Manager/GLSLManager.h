@@ -7,6 +7,7 @@
 
 #include "ImOf.h"
 #include "Config.h"
+#include "BaseManager.h"
 
 #define DEFAULT_SHADER_PATH		ofToDataPath("default.frag")
 #define SEEKBAR_WIDTH			600
@@ -24,7 +25,7 @@ enum TimeDisplayMode {
 	FRAMES
 };
 
-class GLSLManager {
+class GLSLManager : public BaseManager {
 public:
 	
 	ofEvent<int> frameRateUpdated;
