@@ -4,9 +4,11 @@
 
 [Download](https://github.com/baku89/GLSLRenderer/releases)
 
+**NOTE: The binary in the release page appears not to work because of FFmpeg dependency. Please re-compile it in your own environment to run.**
+
 ## About
 
-GLSL Rendering tool for video production use. The app can export GLSL image using FFmpeg with more detailed composition settings such like duration, size, and fps.
+GLSL Rendering tool for video production use. The app can export GLSL image using FFmpeg with more detailed composition settings such like duration, size, and fps. This is compiled with [openFrameworks v0.9.8](http://openframeworks.cc/).
 
 Develped by [Baku Hashimoto](http://baku89.com)
 
