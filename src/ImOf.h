@@ -163,12 +163,12 @@ namespace ImOf
 	static bool PlayToggle(const char* label, bool *playing, const ImVec2& size = ImVec2(30,0)) {
 		
 		static ImDrawList* drawList = ImGui::GetWindowDrawList();
-		static const ImVec2 itemSize = CalcItemSize(size);
-		static ImVec2 pos;
+		static ImVec2 pos, itemSize;
 		static int cx, cy;
 		static const ImU32 textColor = ImGui::ColorConvertFloat4ToU32(ImGui::GetStyle().Colors[ImGuiCol_Text]);
 		
 		pos = ImGui::GetCursorScreenPos();
+		itemSize = CalcItemSize(size);
 		cx = pos.x + itemSize.x / 2;
 		cy = pos.y + itemSize.y / 2;
 		
@@ -193,8 +193,7 @@ namespace ImOf
 	static bool Seekbar(const char* label, int* v, int v_min, int v_max, const ImVec2& size = ImVec2(0,0)) {
 		
 		static ImDrawList* drawList = ImGui::GetWindowDrawList();
-		static const ImVec2 itemSize = CalcItemSize(size);
-		static ImVec2 pos;
+		static ImVec2 pos, itemSize;
 		static float cy;
 		static bool result;
 		static const ImU32 textColor = [] {
@@ -207,6 +206,7 @@ namespace ImOf
 		}();
 		
 		pos = ImGui::GetCursorScreenPos();
+		itemSize = CalcItemSize(size);
 		cy = pos.y + itemSize.y / 2;
 		
 		drawList->AddLine(ImVec2(pos.x, cy), ImVec2(pos.x + itemSize.x, cy), textColor);
