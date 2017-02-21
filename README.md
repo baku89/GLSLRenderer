@@ -12,13 +12,26 @@ GLSL Rendering tool for video production use. The app can export GLSL image usin
 
 Develped by [Baku Hashimoto](http://baku89.com)
 
+### Uniforms
+
 This app passes some uniforms same as Patricio Gonzalez Vivo's [The Book of Shaders Editor](http://editor.thebookofshaders.com/). Please see the [instruction](http://thebookofshaders.com/03/) for more detailed information.
 
 ```glsl
 uniform vec2 u_resolution; // Canvas size (width,height)
-uniform vec2 u_mouse;      // mouse position in screen pixels
 uniform float u_time;     // Time in seconds since load 
 ```
+
+NOTE: `u_mouse` is not passed.
+
+### Textures
+
+You can pass also textures just like hidden feature of The Book of Shaders Editor.
+
+```glsl
+uniform sampler2D textureName; // http://baku89.com/res/baku_grad3.png
+```
+
+The textures will be cached automatically. So please hit **[R]** to clear caches if you find textures you changed on remote does not appear to be reflected.
 
 ## License
 

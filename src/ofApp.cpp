@@ -11,11 +11,12 @@ void ofApp::setup(){
 #ifdef RELEASE
 	ofSetDataPathRoot("../Resources/data/");
 #endif
-	
 	// setup window attributes
 	ofSetWindowTitle("GLSL Renderer");
 	ofEnableSmoothing();
 	ofSetFrameRate(60);
+	ofDisableArbTex();
+	ofEnableNormalizedTexCoords();
 	
 	// setup imgui
 	ImOf::SetFont();
@@ -295,7 +296,7 @@ void ofApp::dragEvent(ofDragInfo dragInfo){
 			}
 		}
 		
-		
+		file.close();
 	}
 
 }

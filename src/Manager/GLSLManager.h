@@ -1,5 +1,6 @@
 #pragma once
 
+#include <regex>
 #include "ofMain.h"
 
 #include "ofxXmlSettings.h"
@@ -30,6 +31,10 @@ enum TimeDisplayMode {
 class GLSLManager : public BaseManager {
 public:
 	
+	GLSLManager()
+	: uniformTextureRegex("[ \t]*uniform[ \t]+sampler2D[ \t]+([^ \t;]+)[ \t]*;[ \t]*//[ \t]*(https?://[^ \t]+)")
+	{}
+	
 	ofEvent<int>	frameRateUpdated;
 	
 	void setup() {
@@ -48,6 +53,7 @@ public:
 			return;
 		}
 		
+		// compile
 		ss.str("");
 		std::streambuf *old = std::cerr.rdbuf(ss.rdbuf());
 		
@@ -57,7 +63,49 @@ public:
 		
 		shader.linkProgram();
 		
-		if (!compileSucceed) {
+		// set error message
+		if (compileSucceed) {
+			
+			ofBuffer buffer = file.readToBuffer();
+			
+			uniformTextures.clear();
+			
+			for (auto& line : buffer.getLines()) {
+				
+				static smatch m;
+				
+				if (regex_match(line, m, uniformTextureRegex)) {
+					
+					string name = m[1].str();
+					string url  = m[2].str();
+					
+					map<string, ofTexture>::iterator it = cachedTextures.find(url);
+					
+					if (it != cachedTextures.end()) {
+						
+						// use cache
+						ofLogNotice() << "Using cached " << url;
+						
+						uniformTextures[name] = cachedTextures[url];
+						
+					} else {
+					
+						ofLogNotice() << "Loading " << url;
+					
+						ofTexture texture;
+						ofHttpResponse response = ofLoadURL(url);
+						
+						if (ofLoadImage(texture, response.data)) {
+							uniformTextures[name] = texture;
+							cachedTextures[url] = texture;
+						}
+						
+					}
+				}
+			}
+			
+		} else {
+			
 			// get error
 			GLuint frag = shader.getShader(GL_FRAGMENT_SHADER);
 			GLsizei infoLength;
@@ -118,6 +166,7 @@ public:
 	}
 	
 	void setSize(int w, int h) {
+		
 		target.allocate(w, h, GL_RGB);
 		renderFbo.allocate(w, h, GL_RGB);
 		targetSize[0] = w;
@@ -224,7 +273,6 @@ public:
 				}
 			}
 			ofPopMatrix();
-		
 		}  
 	}
 	
@@ -393,6 +441,11 @@ private:
 			shader.setUniform1f("u_time", time);
 			shader.setUniform2f("u_resolution", target.getWidth(), target.getHeight());
 			
+			int i = 0;
+			for (const auto iter : uniformTextures) {
+				shader.setUniformTexture(iter.first, iter.second, i++);
+			}
+			
 			ofDrawRectangle(0, 0, target.getWidth(), target.getHeight());
 			
 			shader.end();
@@ -420,6 +473,8 @@ private:
 				isPlaying = !isPlaying;
 				break;
 			case 'r':
+				cachedTextures.clear();
+				ofLogNotice() << "textures cleared";
 				reloadShader();
 				break;
 			case OF_KEY_LEFT:
@@ -432,6 +487,10 @@ private:
 				break;
 		}
 	}
+	
+	map<string, ofTexture>	uniformTextures;
+	map<string, ofTexture>	cachedTextures;
+	regex			uniformTextureRegex;
 	
 	ofFbo			renderFbo; // to fix vertical flip when rendering
 	
