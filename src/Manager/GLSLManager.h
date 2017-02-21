@@ -32,7 +32,8 @@ class GLSLManager : public BaseManager {
 public:
 	
 	GLSLManager()
-	: uniformTextureRegex("[ \t]*uniform[ \t]+sampler2D[ \t]+([^ \t;]+)[ \t]*;[ \t]*//[ \t]*(https?://[^ \t]+)")
+	: uniformTextureRegex("^[ \t]*uniform[ \t]+sampler2D[ \t]+([^ \t;]+)[ \t]*;[ \t]*//[ \t]*([^ \t]+)")
+	, urlRegex("^https?://.+$")
 	{}
 	
 	ofEvent<int>	frameRateUpdated;
@@ -77,30 +78,40 @@ public:
 				if (regex_match(line, m, uniformTextureRegex)) {
 					
 					string name = m[1].str();
-					string url  = m[2].str();
+					string location =  m[2].str();
 					
-					map<string, ofTexture>::iterator it = cachedTextures.find(url);
+					ofLogNotice() << "loc=" << location;
 					
-					if (it != cachedTextures.end()) {
+					if (regex_match(location, urlRegex)) {
 						
-						// use cache
-						ofLogNotice() << "Using cached " << url;
+						map<string, ofTexture>::iterator it = cachedTextures.find(location);
 						
-						uniformTextures[name] = cachedTextures[url];
-						
-					} else {
-					
-						ofLogNotice() << "Loading " << url;
-					
-						ofTexture texture;
-						ofHttpResponse response = ofLoadURL(url);
-						
-						if (ofLoadImage(texture, response.data)) {
-							uniformTextures[name] = texture;
-							cachedTextures[url] = texture;
+						if (it != cachedTextures.end()) {
+							
+							// use cache
+							ofLogNotice() << "Using cached " << location;
+							
+							uniformTextures[name] = cachedTextures[location];
+							
+						} else {
+							
+							ofLogNotice() << "Loading " << location;
+							
+							ofTexture texture;
+							ofHttpResponse response = ofLoadURL(location);
+							
+							if (response.status == 200 && ofLoadImage(texture, response.data)) {
+								uniformTextures[name] = texture;
+								cachedTextures[location] = texture;
+							}
 						}
 						
+					} else {
+						
+						ofLogNotice() << "path desu=" << location;
 					}
+					
+					
 				}
 			}
 			
@@ -490,7 +501,7 @@ private:
 	
 	map<string, ofTexture>	uniformTextures;
 	map<string, ofTexture>	cachedTextures;
-	regex			uniformTextureRegex;
+	regex			uniformTextureRegex, urlRegex;
 	
 	ofFbo			renderFbo; // to fix vertical flip when rendering
 	
