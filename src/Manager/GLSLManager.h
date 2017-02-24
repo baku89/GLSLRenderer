@@ -31,11 +31,6 @@ enum TimeDisplayMode {
 class GLSLManager : public BaseManager {
 public:
 	
-	GLSLManager()
-	: uniformTextureRegex("^[ \t]*uniform[ \t]+sampler2D[ \t]+([^ \t;]+)[ \t]*;[ \t]*//[ \t]*([^ \t]+)")
-	, urlRegex("^https?://.+$")
-	{}
-	
 	ofEvent<int>	frameRateUpdated;
 	
 	void setup() {
@@ -45,6 +40,10 @@ public:
 	}
 	
 	void loadShader(string path) {
+		
+		
+		static regex uniformTextureRegex("^[ \t]*uniform[ \t]+sampler2D[ \t]+([^ \t;]+)[ \t]*;[ \t]*//[ \t]*([^ \t]+)");
+		static regex urlRegex("^https?://.+$");
 		
 		file.open(path);
 		
@@ -80,38 +79,40 @@ public:
 					string name = m[1].str();
 					string location =  m[2].str();
 					
-					ofLogNotice() << "loc=" << location;
+					// search cached
+					map<string, ofTexture>::iterator it = cachedTextures.find(location);
+					if (it != cachedTextures.end()) {
+						// use cache
+						ofLogNotice() << "Using cached:" << location;
+						uniformTextures[name] = cachedTextures[location];
 					
-					if (regex_match(location, urlRegex)) {
+					} else {
 						
-						map<string, ofTexture>::iterator it = cachedTextures.find(location);
-						
-						if (it != cachedTextures.end()) {
+						static ofFile textureFile;
+						ofTexture texture;
+						bool result;
+					
+						if (regex_match(location, urlRegex)) {
 							
-							// use cache
-							ofLogNotice() << "Using cached " << location;
-							
-							uniformTextures[name] = cachedTextures[location];
+							ofLogNotice() << "Loading from URL:" << location;
+							ofHttpResponse response = ofLoadURL(location);
+							result = response.status == 200 && ofLoadImage(texture, response.data);
 							
 						} else {
 							
-							ofLogNotice() << "Loading " << location;
-							
-							ofTexture texture;
-							ofHttpResponse response = ofLoadURL(location);
-							
-							if (response.status == 200 && ofLoadImage(texture, response.data)) {
-								uniformTextures[name] = texture;
-								cachedTextures[location] = texture;
-							}
+							ofLogNotice() << "Loading from File:" << location;
+							textureFile.open(location);
+							result = textureFile.exists() && ofLoadImage(texture, location);
 						}
 						
-					} else {
-						
-						ofLogNotice() << "path desu=" << location;
+						if (result) {
+							uniformTextures[name] = texture;
+							cachedTextures[location] = texture;
+						} else {
+							compileSucceed = false;
+							errorMessage = "texture \"" + location + "\" does not exist";
+						}
 					}
-					
-					
 				}
 			}
 			
@@ -499,9 +500,9 @@ private:
 		}
 	}
 	
+	
 	map<string, ofTexture>	uniformTextures;
 	map<string, ofTexture>	cachedTextures;
-	regex			uniformTextureRegex, urlRegex;
 	
 	ofFbo			renderFbo; // to fix vertical flip when rendering
 	
